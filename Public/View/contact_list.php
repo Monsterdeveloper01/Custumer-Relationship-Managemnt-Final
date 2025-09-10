@@ -1,6 +1,6 @@
 <?php
-require_once 'db.php';
-require_once 'functions.php';
+require_once '/../Model/db.php';
+require_once '/../Controller/functions.php';
 session_start(); // pastikan session aktif
 
 // Pastikan user login

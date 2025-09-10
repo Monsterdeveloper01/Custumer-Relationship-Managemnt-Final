@@ -1,6 +1,6 @@
 <?php
 // delete_contact.php
-require_once 'db.php';
+require_once '/../Model/db.php';
 session_start();
 
 $marketingId = $_SESSION['user']['marketing_id'] ?? null;

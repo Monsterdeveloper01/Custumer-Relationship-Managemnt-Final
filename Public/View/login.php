@@ -2,8 +2,8 @@
 // login.php
 session_start();
 
-require_once 'db.php';
-require_once 'functions.php';
+require_once '/../Model/db.php';
+require_once '/../Controller/functions.php';
 
 $err = '';
 $marketing_id_post = $_POST['marketing_id'] ?? '';

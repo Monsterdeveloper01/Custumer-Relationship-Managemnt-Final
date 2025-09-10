@@ -1,6 +1,6 @@
 <?php
-require_once 'db.php';
-require_once 'functions.php';
+require_once '/../Model/db.php';
+require_once '/../Controller/functions.php';
 // Kalau session sudah aktif jangan dipanggil lagi
 if (session_status() === PHP_SESSION_NONE) {
     session_start();

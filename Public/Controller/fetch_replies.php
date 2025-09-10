@@ -1,6 +1,6 @@
 <?php
-require 'db.php';
-require 'functions.php';
+require '/../Model/db.php';
+require '/../Controller/functions.php';
 
 $mid = current_marketing_id();
 

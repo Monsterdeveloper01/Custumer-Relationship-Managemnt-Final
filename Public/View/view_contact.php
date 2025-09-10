@@ -1,7 +1,7 @@
 <?php
 // view_contact.php
-require_once 'db.php';
-require_once 'functions.php';
+require_once '/../Model/db.php';
+require_once '/../Controller/functions.php';
 require_login();
 $mid = current_marketing_id();
 $email = $_GET['email'] ?? '';

@@ -1,6 +1,6 @@
 <?php
-require_once __DIR__ . '/db.php';        // koneksi PDO
-require_once __DIR__ . '/functions.php'; // fungsi2 (require_login, current_marketing_id, h)
+require_once __DIR__ . '/../Model/db.php';        // koneksi PDO
+require_once __DIR__ . '/../Controller/functions.php'; // fungsi2 (require_login, current_marketing_id, h)
 
 require_login(); // wajib login
 
