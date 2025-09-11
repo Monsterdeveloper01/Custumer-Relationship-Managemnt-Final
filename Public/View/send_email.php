@@ -8,7 +8,7 @@ require_login(); // wajib login
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
-require 'vendor/autoload.php';
+require __DIR__ . '/../../vendor/autoload.php';
 
 $mid             = current_marketing_id();
 $marketing_name  = $_SESSION['user']['name'];
@@ -205,10 +205,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_email'])) {
 
 <body>
   <!-- Header -->
-  <?php include("partials/Header.html"); ?>
-
-  <!-- Sidebar -->
-  <?php include("partials/sidebar.html"); ?>
+  <?php include("Partials/Header.html"); ?>
 
   <!-- Bagian Send Email -->
   <section name="sendmail" class="bg-white shadow-lg rounded-xl p-6">

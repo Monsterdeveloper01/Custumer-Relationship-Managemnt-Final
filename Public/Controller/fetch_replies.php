@@ -1,6 +1,6 @@
 <?php
-require '/../Model/db.php';
-require '/../Controller/functions.php';
+require_once __DIR__ . '/../Model/db.php';
+require_once __DIR__ . '/../Controller/functions.php';
 
 $mid = current_marketing_id();
 
@@ -95,5 +95,5 @@ if ($emails) {
 imap_close($inbox);
 
 // Redirect otomatis ke view_replies.php
-header("Location: view_replies.php");
+header("Location: ../View/view_replies.php");
 exit;

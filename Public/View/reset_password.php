@@ -35,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reset_password'])) {
 <head>
   <meta charset="UTF-8">
   <title>Reset Password | IT Consultant CRM</title>
-  <link href="css/output.css" rel="stylesheet">
+  <link href="../../Public/assets/css/output.css" rel="stylesheet">
 </head>
 <body class="bg-gradient-to-r from-blue-50 to-blue-100 min-h-screen flex items-center justify-center">
 

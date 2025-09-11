@@ -1,7 +1,7 @@
 <?php
 // edit_contact.php
-require_once '/../Model/db.php';
-require_once '/../Controller/functions.php';
+require_once __DIR__ . '/../Model/db.php';
+require_once __DIR__ . '/../Controller/functions.php';
 require_login();
 $mid = current_marketing_id();
 

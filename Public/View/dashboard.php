@@ -150,10 +150,8 @@ $rowsPaginated = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 <body class="bg-gray-50 flex" x-data="{ sidebarOpen: false, isCollapsed: false }">
   <!-- Header -->
-  <?php include("partials/Header.html"); ?>
+  <?php include("Partials/Header.html"); ?>
 
-  <!-- Sidebar -->
-  <?php include("partials/sidebar.html"); ?>
   <!-- Main Content -->
   <div :class="isCollapsed ? 'collapsed' : ''" class="main-content w-full min-h-screen flex flex-col">
     <br><br><br><br>

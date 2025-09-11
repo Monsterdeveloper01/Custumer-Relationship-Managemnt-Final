@@ -2,8 +2,8 @@
 // login.php
 session_start();
 
-require_once '/../Model/db.php';
-require_once '/../Controller/functions.php';
+require_once __DIR__ . '/../Model/db.php';
+require_once __DIR__ . '/../Controller/functions.php';
 
 $err = '';
 $marketing_id_post = $_POST['marketing_id'] ?? '';
@@ -36,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <meta charset="utf-8">
   <title>Login CRM | IT Consultant</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link href="css/output.css" rel="stylesheet">
+  <link href="../../Public/assets/css/output.css" rel="stylesheet">
 </head>
 <body class="bg-gradient-to-r from-blue-50 to-blue-100 min-h-screen flex items-center justify-center">
 

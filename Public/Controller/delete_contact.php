@@ -1,6 +1,6 @@
 <?php
 // delete_contact.php
-require_once '/../Model/db.php';
+require_once __DIR__ . '/../Model/db.php';
 session_start();
 
 $marketingId = $_SESSION['user']['marketing_id'] ?? null;
@@ -10,7 +10,7 @@ if (!$marketingId) {
 
 if (!isset($_GET['email']) || empty($_GET['email'])) {
     $_SESSION['toast'] = ['icon' => 'error', 'msg' => 'Email tidak valid!'];
-    header("Location: contact_list.php");
+    header("Location: ../View/contact_list.php");
     exit;
 }
 
@@ -29,6 +29,6 @@ if ($stmt->rowCount() > 0) {
     $_SESSION['toast'] = ['icon' => 'error', 'msg' => 'Gagal menghapus: kontak tidak ditemukan atau bukan milikmu!'];
 }
 
-header("Location: contact_list.php");
+header("Location: ../View/contact_list.php");
 exit;
 

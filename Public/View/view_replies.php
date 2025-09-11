@@ -1,6 +1,6 @@
 <?php
-require '/../Model/db.php';
-require '/../Controller/functions.php';
+require_once __DIR__ . '/../Model/db.php';
+require_once __DIR__ . '/../Controller/functions.php';
 
 require_login();
 $mid = current_marketing_id();
@@ -104,10 +104,7 @@ $replies = $stmt->fetchAll(PDO::FETCH_ASSOC);
 <body class="bg-gray-100 min-h-screen">
 
       <!-- Header -->
-  <?php include("partials/Header.html"); ?>
-
-  <!-- Sidebar -->
-  <?php include("partials/sidebar.html"); ?>
+  <?php include("Partials/Header.html"); ?>
 
   <div class="max-w-6xl mx-auto py-10 px-4">
     <h1 class="text-2xl font-bold mb-6 text-gray-800">📩 Daftar Balasan Email</h1>

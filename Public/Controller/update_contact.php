@@ -1,6 +1,6 @@
 <?php
-require_once '/../Model/db.php';
-require_once '/../Controller/functions.php';
+require_once __DIR__ . '/../Model/db.php';
+require_once __DIR__ . '/../Controller/functions.php';
 // Kalau session sudah aktif jangan dipanggil lagi
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -53,6 +53,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     ]);
 
 
-    header("Location: contact_list.php");
+    header("Location: ../View/contact_list.php");
     exit;
 }
