@@ -1,0 +1,499 @@
+/* CONTENT */
+.container {
+  max-width: 1200px;
+  margin: auto;
+  padding: 40px 24px;
+}
+
+.title {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.subtitle {
+  color: #6B7280;
+  margin-bottom: 32px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+}
+
+.card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 24px;
+}
+
+/* FORM */
+.form-group {
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+.form-row {
+  display: flex;
+  gap: 16px;
+}
+
+label {
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+
+input,
+select,
+textarea {
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-family: inherit;
+}
+
+textarea {
+  resize: none;
+  min-height: 80px;
+}
+
+.button-group {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.btn {
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.btn.primary {
+  background: #0284C7;
+  color: #fff;
+  border: none;
+}
+
+.btn.secondary {
+  background: #fff;
+  border: 1px solid #E5E7EB;
+  color: #0284C7;
+}
+
+/* INFO BOX */
+.info-card h2 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.info-card ol {
+  margin: 0 0 16px 20px;
+  padding: 0;
+  color: #374151;
+}
+
+.info-card #benefit-list li {
+  margin-bottom: 8px;
+}
+
+.info-box {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.note {
+  font-size: 14px;
+  color: #6B7280;
+  margin-bottom: 16px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+th,
+td {
+  padding: 10px 12px;
+  border-top: 1px solid #E5E7EB;
+  text-align: left;
+}
+
+th {
+  font-weight: 600;
+  background: #F9FAFB;
+}
+
+.btn.primary:hover,
+.btn.secondary:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 10px rgba(6, 182, 212, 0.25);
+}
+
+/* ====== Font & Body ====== */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: #ffffff;
+  margin: 0;
+  padding: 0;
+  color: #111827;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* ====== Layout ====== */
+.form-container {
+  max-width: 1100px;
+  margin: 40px auto;
+  padding: 20px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+}
+
+/* ====== Card Box ====== */
+.card {
+  background: #fff;
+  border: 1px solid #E5E7EB;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+  padding: 24px;
+  height: auto;
+}
+
+.card2 {
+  background: #fff;
+  border: 1px solid #E5E7EB;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+  padding: 24px;
+  height: fit-content;
+}
+
+h2 {
+  margin: 0 0 10px;
+  font-size: 17px;
+  color: #333;
+}
+
+.card p,
+.card li {
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+/* ====== Form Grid ====== */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.form-grid input,
+.form-grid textarea {
+  padding: 6px 10px;
+  border: 1px solid #D1D5DB;
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+  height: 36px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+label {
+  display: block;
+  font-size: 13px;
+  margin-bottom: 3px;
+  color: #444;
+}
+
+.form-grid textarea {
+  min-height: 65px;
+  resize: vertical;
+}
+
+.form-grid input:focus,
+.form-grid textarea:focus {
+  border-color: #059bb6;
+  /* biru tosca gelap */
+  box-shadow: 0 0 0 2px rgba(5, 155, 182, 0.15);
+}
+
+.form-full {
+  grid-column: span 2;
+}
+
+/* ====== Button Style ====== */
+.btn {
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  display: inline-block;
+  text-align: center;
+}
+
+.btn.primary,
+.btn.secondary {
+  background: #fff;
+  border: 1px solid #D1D5DB;
+  color: #059bb6;
+  box-shadow: 0 2px 4px rgba(5, 155, 182, 0.15);
+}
+
+.btn.primary:hover,
+.btn.secondary:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 10px rgba(5, 155, 182, 0.25);
+}
+
+/* ====== Link ====== */
+a {
+  color: #059bb6;
+  text-decoration: none;
+  font-size: 14px;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* ====== Table ====== */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+th,
+td {
+  padding: 10px 12px;
+  border: 1px solid #E5E7EB;
+  text-align: left;
+}
+
+th {
+  font-weight: 600;
+  background: #F3F4F6;
+  color: #111827;
+}
+
+.form-grid input,
+.form-grid select,
+.form-grid textarea {
+  padding: 4px 10px;
+  border: 1px solid #D1D5DB;
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+  height: 32px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-grid textarea {
+  min-height: 50px;
+  resize: vertical;
+  height: auto;
+}
+
+textarea[name="profil_jaringan"]::placeholder {
+  font-family: monospace;
+  font-size: 13px;
+  color: #9CA3AF;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: #059bb6;
+  box-shadow: 0 0 3px rgba(5, 155, 182, 0.3);
+}
+
+/* ====== Partner List Section ====== */
+.partner-list {
+  margin-top: 40px;
+}
+
+.partner-list h2 {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: #059bb6;
+}
+
+/* Table Wrapper */
+.table-card {
+  background: #fff;
+  border: 1px solid #E5E7EB;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+/* Table */
+.partner-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.partner-table thead {
+  background: #F3F4F6;
+}
+
+.partner-table th,
+.partner-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid #E5E7EB;
+  text-align: left;
+}
+
+.partner-table th {
+  font-weight: 600;
+  color: #111827;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.partner-table tr:hover {
+  background: #F9FAFB;
+  transition: background 0.2s ease;
+}
+
+/* Status Badge */
+.badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.badge.active {
+  background: #DCFCE7;
+  color: #166534;
+}
+
+.badge.inactive {
+  background: #FEE2E2;
+  color: #991B1B;
+}
+
+/* Action Buttons */
+.table-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.table-actions .btn {
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.table-actions .btn.view {
+  background: #E0F2FE;
+  color: #0369A1;
+  border: 1px solid #BAE6FD;
+}
+
+.table-actions .btn.delete {
+  background: #FEE2E2;
+  color: #B91C1C;
+  border: 1px solid #FECACA;
+}
+
+.table-actions .btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.08);
+}
+
+/* Benefit / Keuntungan */
+
+#benefits {
+  background: #f9fafb;
+  padding: 40px 20px;
+  margin-top: 40px;
+}
+
+#benefits h2 {
+  text-align: center;
+  font-size: 1.35rem;
+  margin-bottom: 2rem;
+}
+
+.grid-container {
+  width: min(75rem, 100%);
+  margin-inline: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(20rem, 100%), 1fr));
+  gap: 2rem;
+}
+
+.cardbenefit {
+  padding: 2rem;
+  background-image: linear-gradient(to bottom left, #ffffff, #f2f6f9);
+  border-radius: 2rem;
+  gap: 1.5rem;
+  display: grid;
+  grid-template: 'title icon' 'content content' 'bar bar' / 1fr auto;
+  font-family: system-ui, sans-serif;
+  color: #444447;
+  box-shadow:
+    inset -2px 2px hsl(0 0 100% / 1),
+    -20px 20px 40px hsla(0, 0%, 76%, 0.25);
+
+  .title {
+    font-size: 1.3rem;
+    grid-area: title;
+    align-self: end;
+    text-transform: uppercase;
+    font-weight: 500;
+    word-break: break-all;
+
+  }
+
+  .content {
+    grid-area: content;
+
+    &>*:first-child {
+      margin-top: 0rem
+    }
+
+    &>*:last-child {
+      margin-bottom: 0rem
+    }
+  }
+
+  &::after {
+    content: "";
+    grid-area: bar;
+    height: 2px;
+    background-image: linear-gradient(90deg, var(--grad));
+    margin-inline: -1.5rem;
+  }
+}
