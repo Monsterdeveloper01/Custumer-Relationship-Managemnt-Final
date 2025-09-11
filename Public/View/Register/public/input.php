@@ -1,68 +1,47 @@
 <?php
-require '../backend/dbconnection.php';
+require '../../../Model/db.php'; // pastikan $pdo dari sini
 
-// Proses insert
-
-$alertScript = ""; // variabel untuk menampung JS alert
+$alertScript = "";
 
 if (isset($_POST['submit'])) {
     $jenis_partner = $_POST['jenis_partner'];
     $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
 
     if ($jenis_partner == "institution") {
-        $kode = $_POST['kode_institusi_partner'];
+        $kode  = $_POST['marketing_id']; // ganti dari kode_institusi_partner -> marketing_id
         $email = $_POST['email'];
 
-        // Cek duplikat kode institusi
-        $check = $conn->prepare("SELECT COUNT(*) FROM institusi_partner WHERE kode_institusi_partner = ?");
-        $check->bind_param("s", $kode);
-        $check->execute();
-        $check->bind_result($countKode);
-        $check->fetch();
-        $check->close();
+        // Cek duplikat marketing_id
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM institusi_partner WHERE marketing_id = ?");
+        $stmt->execute([$kode]);
+        $countKode = $stmt->fetchColumn();
 
         if ($countKode > 0) {
-            $alertScript = "
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Institution code already in use',
-                    text: 'Please use a different code!'
-                }).then(() => { window.history.back(); });
-            ";
+            $alertScript = "Swal.fire({icon:'error',title:'Institution code already in use',text:'Please use a different code!'}).then(()=>{window.history.back();});";
         }
 
         // Cek duplikat email
         if ($alertScript === "") {
-            $check = $conn->prepare("SELECT COUNT(*) FROM institusi_partner WHERE email = ?");
-            $check->bind_param("s", $email);
-            $check->execute();
-            $check->bind_result($countEmail);
-            $check->fetch();
-            $check->close();
+            $stmt = $pdo->prepare("SELECT COUNT(*) FROM institusi_partner WHERE email = ?");
+            $stmt->execute([$email]);
+            $countEmail = $stmt->fetchColumn();
 
             if ($countEmail > 0) {
-                $alertScript = "
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Email is already registered',
-                        text: 'Please use a different email!'
-                    }).then(() => { window.history.back(); });
-                ";
+                $alertScript = "Swal.fire({icon:'error',title:'Email already registered',text:'Please use a different email!'}).then(()=>{window.history.back();});";
             }
         }
 
         // Insert kalau tidak ada error
         if ($alertScript === "") {
-            $stmt = $conn->prepare("INSERT INTO institusi_partner 
-            (kode_institusi_partner, nama_institusi, nama_partner, whatsapp, email, password, profil_jaringan, segment_industri_fokus, promo_suggestion, referral_awal, active_status, discount_pct) 
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?)");
+            $stmt = $pdo->prepare("INSERT INTO institusi_partner 
+                (marketing_id, nama_institusi, nama_partner, whatsapp, email, password, profil_jaringan, segment_industri_fokus, promo_suggestion, referral_awal, active_status, discount_pct) 
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?)");
 
             $active_status = 1;
-            $discount_pct = 0;
+            $discount_pct  = 0;
 
-            $stmt->bind_param(
-                "ssssssssssii",
-                $_POST['kode_institusi_partner'],
+            $ok = $stmt->execute([
+                $kode,
                 $_POST['nama_institusi'],
                 $_POST['nama_partner'],
                 $_POST['whatsapp'],
@@ -70,86 +49,55 @@ if (isset($_POST['submit'])) {
                 $password,
                 $_POST['profil_jaringan'],
                 $_POST['segment_industri_fokus'],
-                $_POST['promo_suggestion'],
+                $_POST['promo_suggestion'] ?? null,
                 $_POST['referral_awal'],
                 $active_status,
                 $discount_pct
-            );
+            ]);
 
-            if ($stmt->execute()) {
-                $alertScript = "
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Thank you for registering',
-                        text: 'We will contact you within the next few days.'
-                    }).then(() => { window.location = 'index.php'; });
-                ";
+            if ($ok) {
+                $alertScript = "Swal.fire({icon:'success',title:'Thank you for registering',text:'We will contact you within the next few days.'}).then(()=>{window.location='index.php';});";
             } else {
-                $alertScript = "
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error!',
-                        text: 'An error occurred: " . addslashes($stmt->error) . "'
-                    });
-                ";
+                $error = $stmt->errorInfo()[2] ?? 'Unknown error';
+                $alertScript = "Swal.fire({icon:'error',title:'Error!',text:'An error occurred: " . addslashes($error) . "'});";
             }
-
-            $stmt->close();
         }
     } else {
-        // ini biar data masuk ke tabel individual_promocodes
-        $promo_code = $_POST['promo_code'];
+        // Individual
+        $promo_code   = $_POST['marketing_id']; // samain jadi marketing_id
         $nama_lengkap = $_POST['nama_lengkap'];
-        $email = $_POST['email'];
+        $email        = $_POST['email'];
 
-
-        $check = $conn->prepare("SELECT COUNT(*) FROM individual_promocodes WHERE promo_code = ?");
-        $check->bind_param("s", $promo_code);
-        $check->execute();
-        $check->bind_result($countPromo);
-        $check->fetch();
-        $check->close();
+        // Cek duplikat marketing_id
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM individual_promocodes WHERE marketing_id = ?");
+        $stmt->execute([$promo_code]);
+        $countPromo = $stmt->fetchColumn();
 
         if ($countPromo > 0) {
-            $alertScript = "
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Promo code already in use',
-                    text: 'Please use a different promo code!'
-                }).then(() => { window.history.back(); });
-            ";
+            $alertScript = "Swal.fire({icon:'error',title:'Promo code already in use',text:'Please use a different promo code!'}).then(()=>{window.history.back();});";
         }
 
+        // Cek duplikat email
         if ($alertScript === "") {
-            $check = $conn->prepare("SELECT COUNT(*) FROM individual_promocodes WHERE email = ?");
-            $check->bind_param("s", $email);
-            $check->execute();
-            $check->bind_result($countEmail);
-            $check->fetch();
-            $check->close();
+            $stmt = $pdo->prepare("SELECT COUNT(*) FROM individual_promocodes WHERE email = ?");
+            $stmt->execute([$email]);
+            $countEmail = $stmt->fetchColumn();
 
             if ($countEmail > 0) {
-                $alertScript = "
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Email is already registered',
-                        text: 'Please use a different email!'
-                    }).then(() => { window.history.back(); });
-                ";
+                $alertScript = "Swal.fire({icon:'error',title:'Email already registered',text:'Please use a different email!'}).then(()=>{window.history.back();});";
             }
         }
 
-
+        // Insert kalau tidak ada error
         if ($alertScript === "") {
-            $stmt = $conn->prepare("INSERT INTO individual_promocodes 
-                (promo_code, nama_lengkap, whatsapp, email, password, profil_jaringan, segment_industri_fokus, promo_suggestion, referral_awal, active_yn, discount_pct) 
+            $stmt = $pdo->prepare("INSERT INTO individual_promocodes 
+                (marketing_id, nama_lengkap, whatsapp, email, password, profil_jaringan, segment_industri_fokus, promo_suggestion, referral_awal, active_yn, discount_pct) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
             $active_status = 1;
-            $discount_pct = 0;
+            $discount_pct  = 0;
 
-            $stmt->bind_param(
-                "ssssssssiii",
+            $ok = $stmt->execute([
                 $promo_code,
                 $nama_lengkap,
                 $_POST['whatsapp'],
@@ -157,35 +105,23 @@ if (isset($_POST['submit'])) {
                 $password,
                 $_POST['profil_jaringan'],
                 $_POST['segment_industri_fokus'],
-                $_POST['promo_suggestion'],
+                $_POST['promo_suggestion'] ?? null,
                 $_POST['referral_awal'],
                 $active_status,
                 $discount_pct
-            );
+            ]);
 
-            if ($stmt->execute()) {
-                $alertScript = "
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Thank you for registering',
-                        text: 'We will contact you within the next few days.'
-                    }).then(() => { window.location = 'index.php'; });
-                ";
+            if ($ok) {
+                $alertScript = "Swal.fire({icon:'success',title:'Thank you for registering',text:'We will contact you within the next few days.'}).then(()=>{window.location='index.php';});";
             } else {
-                $alertScript = "
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error!',
-                        text: 'An error occurred: " . addslashes($stmt->error) . "'
-                    });
-                ";
+                $error = $stmt->errorInfo()[2] ?? 'Unknown error';
+                $alertScript = "Swal.fire({icon:'error',title:'Error!',text:'An error occurred: " . addslashes($error) . "'});";
             }
-
-            $stmt->close();
         }
     }
 }
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -296,11 +232,11 @@ if (isset($_POST['submit'])) {
                     <div class="form-row">
                         <div class="form-group institution-only">
                             <label>Institution Code</label>
-                            <input type="text" name="kode_institusi_partner" placeholder="max: 3 chars" required maxlength="3">
+                            <input type="text" name="marketing_id" placeholder="max: 3 chars" required maxlength="3">
                         </div>
                         <div class="form-group institution-only">
                             <label>Institution Name</label>
-                            <input type="text" name="nama_institusi" placeholder="Company or Institution Name" required>
+                            <input type="text" name="marketing_id" placeholder="Company or Institution Name" required>
                         </div>
                     </div>
 

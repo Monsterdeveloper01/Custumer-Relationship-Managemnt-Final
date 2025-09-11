@@ -1,28 +1,24 @@
 <?php
-require '../backend/dbconnection.php';
+require '../../../Model/db.php';
 
 // Ambil filter dari URL
-$filter = isset($_GET['filter']) ? $_GET['filter'] : 'all';
+$filter = $_GET['filter'] ?? 'all';
 
 // Gabungkan hasil
 $partners = [];
 
 // Query institusi
 if ($filter === 'institution' || $filter === 'all') {
-    $result = $conn->query("SELECT kode_institusi_partner AS kode, nama_institusi AS nama, whatsapp, email, 'Institution' AS jenis 
-                            FROM institusi_partner");
-    while ($row = $result->fetch_assoc()) {
-        $partners[] = $row;
-    }
+    $stmt = $pdo->query("SELECT marketing_id AS kode, nama_institusi AS nama, whatsapp, email, 'Institution' AS jenis 
+                         FROM institusi_partner");
+    $partners = array_merge($partners, $stmt->fetchAll());
 }
 
 // Query individual
 if ($filter === 'individual' || $filter === 'all') {
-    $result = $conn->query("SELECT promo_code AS kode, nama_lengkap AS nama, whatsapp, email, 'Individual' AS jenis 
-                            FROM individual_promocodes");
-    while ($row = $result->fetch_assoc()) {
-        $partners[] = $row;
-    }
+    $stmt = $pdo->query("SELECT marketing_id AS kode, nama_lengkap AS nama, whatsapp, email, 'Individual' AS jenis 
+                         FROM individual_promocodes");
+    $partners = array_merge($partners, $stmt->fetchAll());
 }
 ?>
 <!DOCTYPE html>
@@ -68,7 +64,7 @@ if ($filter === 'individual' || $filter === 'all') {
             <table class="partner-table">
                 <thead>
                     <tr>
-                        <th>Code</th>
+                        <th>Promo Code / Kode Institusi</th> <!-- label tetap sama -->
                         <th>Name</th>
                         <th>WhatsApp</th>
                         <th>Email</th>
@@ -79,7 +75,7 @@ if ($filter === 'individual' || $filter === 'all') {
                     <?php if (count($partners) > 0): ?>
                         <?php foreach ($partners as $p): ?>
                             <tr>
-                                <td><?= htmlspecialchars($p['kode']) ?></td>
+                                <td><?= htmlspecialchars($p['kode']) ?></td> <!-- ini tetap alias dari marketing_id -->
                                 <td><?= htmlspecialchars($p['nama']) ?></td>
                                 <td><?= htmlspecialchars($p['whatsapp']) ?></td>
                                 <td><?= htmlspecialchars($p['email']) ?></td>
