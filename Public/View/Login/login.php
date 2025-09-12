@@ -108,7 +108,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <button type="submit" class="btn primary">Login</button>
                 </div>
                 <div class="button-group" style="margin-top:10px;">
-                    <a href="../login.php" class="btn secondary">Login ke Dashboard Lain</a>
+                    <a href="../login.php" class="btn secondary">Login ke CRM App</a>
                 </div>
             </form>
         </div>

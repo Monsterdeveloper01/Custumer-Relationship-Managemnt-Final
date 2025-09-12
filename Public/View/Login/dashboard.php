@@ -18,6 +18,7 @@ $sql = "
     WHERE marketing_id = ?
     ORDER BY FIELD(
         status,
+        'input',
         'emailed',
         'contacted',
         'presentation',
@@ -283,12 +284,18 @@ $stats = $statsStmt->fetchAll(PDO::FETCH_ASSOC);
                     <label for="edit_status">Status:</label>
                     <select name="status" id="edit_status" required>
                         <option value="input">Input</option>
-                        <option value="wa">WA</option>
                         <option value="emailed">Emailed</option>
                         <option value="contacted">Contacted</option>
-                        <option value="replied">Replied</option>
                         <option value="presentation">Presentation</option>
-                        <option value="CLIENT">CLIENT</option>
+                        <option value="NDA process">NDA process</option>
+                        <option value="Gap analysis / requirement analysis">Gap analysis / requirement analysis</option>
+                        <option value="SIT (System Integration Testing)">SIT (System Integration Testing)</option>
+                        <option value="UAT (User Acceptance Testing)">UAT (User Acceptance Testing)</option>
+                        <option value="Proposal">Proposal</option>
+                        <option value="Negotiation">Negotiation</option>
+                        <option value="Deal / Closed">Deal / Closed</option>
+                        <option value="Failed / Tidak Lanjut">Failed / Tidak Lanjut</option>
+                        <option value="Postpone">Postpone</option>
                     </select>
                     <button type="submit" class="btn edit">Save Changes</button>
                 </form>
@@ -301,13 +308,20 @@ $stats = $statsStmt->fetchAll(PDO::FETCH_ASSOC);
             $('#contactsTable').DataTable({
                 pageLength: 5,
                 lengthMenu: [5, 10, 25, 50],
-                order: [[0, "asc"]],
-                columnDefs: [{ orderable: false, targets: -1 }]
+                order: [
+                    [0, "asc"]
+                ],
+                columnDefs: [{
+                    orderable: false,
+                    targets: -1
+                }]
             });
             $('#companyTable').DataTable({
                 pageLength: 5,
                 lengthMenu: [5, 10, 25, 50],
-                order: [[0, "asc"]]
+                order: [
+                    [0, "asc"]
+                ]
             });
         });
 
@@ -365,4 +379,5 @@ $stats = $statsStmt->fetchAll(PDO::FETCH_ASSOC);
         }
     </script>
 </body>
+
 </html>
