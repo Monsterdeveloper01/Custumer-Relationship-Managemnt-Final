@@ -570,3 +570,20 @@ textarea:focus {
         border-radius: 6px;
         padding: 4px;
     }
+
+    .btn.secondary {
+  display: inline-block;
+  width: 100%;
+  padding: 10px;
+  background-color: #e5e7eb; /* abu2 */
+  color: #374151;
+  border: none;
+  border-radius: 6px;
+  text-align: center;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+.btn.secondary:hover {
+  background-color: #d1d5db;
+}

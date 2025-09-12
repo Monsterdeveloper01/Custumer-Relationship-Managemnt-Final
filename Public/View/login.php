@@ -86,11 +86,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800" />
       </div>
 
+      <!-- tombol login -->
       <button type="submit"
         class="w-full py-2 px-4 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition">
         Login
       </button>
+
+      <!-- tombol ke dashboard lain -->
+      <a href="../View/Login/login.php"
+        class="w-full block text-center py-2 px-4 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 transition">
+        Buka Dashboard Lain
+      </a>
     </form>
+
 
     <!-- Link reset password -->
     <div class="mt-4 text-center">

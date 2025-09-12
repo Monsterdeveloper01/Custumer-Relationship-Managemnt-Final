@@ -74,39 +74,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8">
-  <title>User Login</title>
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <title>User Login</title>
+    <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
-<div class="container">
-    <h1 class="title">Login</h1>
-    <p class="subtitle">Login with your registered account to access your CRM data.</p>
+    <div class="container">
+        <h1 class="title">Login</h1>
+        <p class="subtitle">Login with your registered account to access your CRM data.</p>
 
-    <div class="card">
-        <?php if ($error): ?>
-            <p style="color:#B91C1C; font-size:14px; margin-bottom:16px;">
-                <?= htmlspecialchars($error) ?>
-            </p>
-        <?php endif; ?>
+        <div class="card">
+            <?php if ($error): ?>
+                <p style="color:#B91C1C; font-size:14px; margin-bottom:16px;">
+                    <?= htmlspecialchars($error) ?>
+                </p>
+            <?php endif; ?>
 
-        <form method="post">
-            <div class="form-group">
-                <label for="email">Email Address</label>
-                <input type="email" id="email" name="email" placeholder="your@email.com" required>
-            </div>
+            <form method="post">
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" name="email" placeholder="your@email.com" required>
+                </div>
 
-            <div class="form-group">
-                <label for="password">Password</label>
-                <input type="password" id="password" name="password" placeholder="********" required>
-            </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" placeholder="********" required>
+                </div>
 
-            <div class="button-group">
-                <button type="submit" class="btn primary">Login</button>
-            </div>
-        </form>
+                <div class="button-group">
+                    <button type="submit" class="btn primary">Login</button>
+                </div>
+                <div class="button-group" style="margin-top:10px;">
+                    <a href="../login.php" class="btn secondary">Login ke Dashboard Lain</a>
+                </div>
+            </form>
+        </div>
     </div>
-</div>
 </body>
+
 </html>
