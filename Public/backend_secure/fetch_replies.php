@@ -1,6 +1,6 @@
 <?php
-require_once __DIR__ . '/../backend_secure/Model/db.php';
-require_once __DIR__ . '/../backend_secure/functions.php';
+require_once __DIR__ . '/../../backend_secure/Model/db.php';
+require_once __DIR__ . '/../../backend_secure/functions.php';
 
 $mid = current_marketing_id();
 
