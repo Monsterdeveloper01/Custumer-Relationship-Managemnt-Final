@@ -113,7 +113,7 @@ $rowsPaginated = $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     .main-content {
-      margin-left: 250px;
+      margin-left: 0px;
       transition: all 0.3s ease;
     }
 
