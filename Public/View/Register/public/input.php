@@ -8,7 +8,7 @@ if (isset($_POST['submit'])) {
     $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
 
     if ($jenis_partner == "institution") {
-        $kode  = $_POST['marketing_id']; // ganti dari kode_institusi_partner -> marketing_id
+        $kode  = $_POST['marketing_id_institution']; // ganti dari kode_institusi_partner -> marketing_id
         $email = $_POST['email'];
 
         // Cek duplikat marketing_id
@@ -56,7 +56,7 @@ if (isset($_POST['submit'])) {
             ]);
 
             if ($ok) {
-                $alertScript = "Swal.fire({icon:'success',title:'Thank you for registering',text:'We will contact you within the next few days.'}).then(()=>{window.location='index.php';});";
+                $alertScript = "Swal.fire({icon:'success',title:'Thank you for registering',text:'We will contact you within the next few days.'});";
             } else {
                 $error = $stmt->errorInfo()[2] ?? 'Unknown error';
                 $alertScript = "Swal.fire({icon:'error',title:'Error!',text:'An error occurred: " . addslashes($error) . "'});";
@@ -64,7 +64,7 @@ if (isset($_POST['submit'])) {
         }
     } else {
         // Individual
-        $promo_code   = $_POST['marketing_id']; // samain jadi marketing_id
+        $promo_code   = $_POST['marketing_id_individual']; // samain jadi marketing_id
         $nama_lengkap = $_POST['nama_lengkap'];
         $email        = $_POST['email'];
 
@@ -112,7 +112,7 @@ if (isset($_POST['submit'])) {
             ]);
 
             if ($ok) {
-                $alertScript = "Swal.fire({icon:'success',title:'Thank you for registering',text:'We will contact you within the next few days.'}).then(()=>{window.location='index.php';});";
+                $alertScript = "Swal.fire({icon:'success',title:'Thank you for registering',text:'We will contact you within the next few days.'});";
             } else {
                 $error = $stmt->errorInfo()[2] ?? 'Unknown error';
                 $alertScript = "Swal.fire({icon:'error',title:'Error!',text:'An error occurred: " . addslashes($error) . "'});";
@@ -232,7 +232,7 @@ if (isset($_POST['submit'])) {
                     <div class="form-row">
                         <div class="form-group institution-only">
                             <label>Institution Code</label>
-                            <input type="text" name="marketing_id" placeholder="max: 3 chars" required maxlength="3">
+                            <input type="text" name="marketing_id_institution" placeholder="max: 3 chars" required maxlength="3">
                         </div>
                         <div class="form-group institution-only">
                             <label>Institution Name</label>
@@ -252,7 +252,7 @@ if (isset($_POST['submit'])) {
                     <div class="form-row">
                         <div class="form-group individual-only">
                             <label>Promo Code</label>
-                            <input type="text" name="marketing_id" placeholder="max: 3 chars" required maxlength="3">
+                            <input type="text" name="marketing_id_individual" placeholder="max: 3 chars" required maxlength="3">
                         </div>
                         <div class="form-group individual-only">
                             <label>Full Name</label>
