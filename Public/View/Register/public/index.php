@@ -1,5 +1,5 @@
 <?php
-require '../../../Model/db.php';
+require_once __DIR__ . '/../../backend_secure/Model/db.php';
 
 // Ambil filter dari URL
 $filter = $_GET['filter'] ?? 'all';

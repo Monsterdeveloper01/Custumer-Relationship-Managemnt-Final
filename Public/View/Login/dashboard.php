@@ -1,6 +1,6 @@
 <?php
 session_start();
-require '../../Model/db.php';
+require_once __DIR__ . '/../../backend_secure/Model/db.php';
 
 // Kalau belum login, tendang ke login
 if (!isset($_SESSION['user'])) {
