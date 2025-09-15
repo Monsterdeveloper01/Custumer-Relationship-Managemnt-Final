@@ -236,7 +236,7 @@ if (isset($_POST['submit'])) {
                         </div>
                         <div class="form-group institution-only">
                             <label>Institution Name</label>
-                            <input type="text" name="marketing_id" placeholder="Company or Institution Name" required>
+                            <input type="text" name="nama_institusi" placeholder="Company or Institution Name" required>
                         </div>
                     </div>
 
