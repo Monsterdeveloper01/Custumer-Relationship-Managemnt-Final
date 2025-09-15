@@ -1,6 +1,6 @@
 <?php
-require_once __DIR__ . '/../Model/db.php';
-require_once __DIR__ . '/../Controller/functions.php';
+require_once __DIR__ . '/../../backend_secure/Model/db.php';
+require_once __DIR__ . '/../../backend_secure/functions.php';
 session_start(); // pastikan session aktif
 
 // Pastikan user login
@@ -73,7 +73,7 @@ if (isset($_GET['email'])) {
             cancelButtonText: 'Batal'
         }).then((result) => {
             if (result.isConfirmed) {
-                window.location.href = "../Controller/delete_contact.php?email=" + encodeURIComponent(email);
+                window.location.href = "/../../backend_secure/delete_contact.php?email=" + encodeURIComponent(email);
             }
         });
     }
@@ -93,7 +93,7 @@ if (isset($_GET['email'])) {
                 <?= $editData ? "Edit Contact" : "Add New Contact" ?>
             </h2>
 
-            <form action="<?= $editData ? '../Controller/update_contact.php' : '../Controller/save_contact.php' ?>" method="POST" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <form action="<?= $editData ? '/../../backend_secure/update_contact.php' : '/../../backend_secure/save_contact.php' ?>" method="POST" class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <?php if ($editData): ?>
                     <input type="hidden" name="old_company_email" value="<?= h($editData['company_email']); ?>">
                 <?php endif; ?>
