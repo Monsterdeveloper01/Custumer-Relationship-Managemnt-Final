@@ -162,45 +162,59 @@ $stats = $statsStmt->fetchAll(PDO::FETCH_ASSOC);
         </div>
 
         <!-- Contact List -->
-        <div class="card info-card partner-list">
-            <h2>Your List</h2>
-            <table id="contactsTable" class="partner-table">
-                <thead>
+<!-- Contact List -->
+<div class="card info-card partner-list">
+
+    <!-- Tombol Add Contact -->
+    <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-semibold">Your List</h2>
+        <a href="add_contact.php"
+           class="inline-flex items-center px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white shadow-md transition ease-in-out duration-150">
+            + Add Contact
+        </a>
+    </div>
+
+    <table id="contactsTable" class="partner-table w-full border-collapse">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Contact Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Company</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php if (count($contacts) > 0): ?>
+                <?php foreach ($contacts as $i => $c): ?>
                     <tr>
-                        <th>#</th>
-                        <th>Contact Name</th>
-                        <th>Email</th>
-                        <th>Phone</th>
-                        <th>Company</th>
-                        <th>Status</th>
-                        <th>Actions</th>
+                        <td><?= $i + 1 ?></td>
+                        <td><?= htmlspecialchars($c['name_person']) ?></td>
+                        <td><?= htmlspecialchars($c['company_email']) ?></td>
+                        <td><?= htmlspecialchars($c['phone_number']) ?></td>
+                        <td><?= htmlspecialchars($c['company_name']) ?></td>
+                        <td><?= htmlspecialchars($c['status']) ?></td>
+                        <td class="table-actions">
+                            <a href="send_email.php?company_email=<?= urlencode($c['company_email']) ?>"
+                               class="btn email">Send Email</a>
+                            <a href="javascript:void(0);" class="btn edit"
+                               onclick='openEditModal(<?= json_encode($c) ?>)'>Edit</a>
+                            <a href="javascript:void(0);" class="btn details"
+                               onclick='toggleDetails(this, <?= json_encode($c) ?>)'>Details</a>
+                        </td>
                     </tr>
-                </thead>
-                <tbody>
-                    <?php if (count($contacts) > 0): ?>
-                        <?php foreach ($contacts as $i => $c): ?>
-                            <tr>
-                                <td><?= $i + 1 ?></td>
-                                <td><?= htmlspecialchars($c['name_person']) ?></td>
-                                <td><?= htmlspecialchars($c['person_email']) ?></td>
-                                <td><?= htmlspecialchars($c['phone_number']) ?></td>
-                                <td><?= htmlspecialchars($c['company_name']) ?></td>
-                                <td><?= htmlspecialchars($c['status']) ?></td>
-                                <td class="table-actions">
-                                    <a href="send_email.php?company_email=<?= urlencode($c['company_email']) ?>" class="btn email">Send Email</a>
-                                    <a href="javascript:void(0);" class="btn edit" onclick='openEditModal(<?= json_encode($c) ?>)'>Edit</a>
-                                    <a href="javascript:void(0);" class="btn details" onclick='toggleDetails(this, <?= json_encode($c) ?>)'>Details</a>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    <?php else: ?>
-                        <tr>
-                            <td colspan="7" style="text-align:center;">No contacts available</td>
-                        </tr>
-                    <?php endif; ?>
-                </tbody>
-            </table>
-        </div>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <tr>
+                    <td colspan="7" style="text-align:center;">No contacts available</td>
+                </tr>
+            <?php endif; ?>
+        </tbody>
+    </table>
+</div>
+
 
         <!-- CRM Statistics -->
         <div class="card stats-card">
