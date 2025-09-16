@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/../../backend_secure/Model/db.php';
+require '../../Model/db.php';
 session_start();
 
 // Kalau belum login, redirect

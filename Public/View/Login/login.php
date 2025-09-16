@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/../../backend_secure/Model/db.php';
+require '../../Model/db.php';
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -78,7 +78,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <title>User Login</title>
-    <link rel="stylesheet" href="../../assets/css/output.css">
+    <link rel="stylesheet" href="../Login/style.css">
 </head>
 
 <body>

@@ -1,6 +1,6 @@
 <?php
-require_once __DIR__ . '/../../backend_secure/Model/db.php';
-require_once __DIR__ . '/../../backend_secure/functions.php';
+require_once __DIR__ . '/../Model/db.php';
+require_once __DIR__ . '/../Controller/functions.php';
 
 // Pastikan user sudah login
 require_login();
@@ -288,7 +288,7 @@ $rowsPaginated = $stmt->fetchAll(PDO::FETCH_ASSOC);
               </div>
               <span class="text-sm font-medium text-gray-700">Export Data</span>
             </a>
-            <a href="../backend_secure/fetch_replies.php" class="flex flex-col items-center justify-center p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition">
+            <a href="fetch_replies.php" class="flex flex-col items-center justify-center p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition">
               <div class="p-3 bg-purple-100 text-purple-600 rounded-full mb-2">
                 <i class="fas fa-chart-pie"></i>
               </div>
