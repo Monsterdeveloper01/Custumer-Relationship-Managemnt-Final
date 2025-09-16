@@ -197,7 +197,7 @@ $stats = $statsStmt->fetchAll(PDO::FETCH_ASSOC);
                         <td><?= htmlspecialchars($c['company_name']) ?></td>
                         <td><?= htmlspecialchars($c['status']) ?></td>
                         <td class="table-actions">
-                            <a href="send_email.php?company_email=<?= urlencode($c['company_email']) ?>"
+                            <a href="../send_email.php?company_email=<?= urlencode($c['company_email']) ?>"
                                class="btn email">Send Email</a>
                             <a href="javascript:void(0);" class="btn edit"
                                onclick='openEditModal(<?= json_encode($c) ?>)'>Edit</a>
