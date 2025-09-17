@@ -14,14 +14,12 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-$company_email = $_POST['company_email'] ?? '';
-$name_person   = $_POST['name_person'] ?? '';
-$person_email  = $_POST['person_email'] ?? '';
-$phone_number  = $_POST['phone_number'] ?? '';
-$company_name  = $_POST['company_name'] ?? '';
-$status        = $_POST['status'] ?? 'input';
+$email      = $_POST['person_email'] ?? '';
+$nama_perusahaan = $_POST['company_name'] ?? '';
+$no_telp1   = $_POST['phone_number'] ?? '';
+$status     = $_POST['status'] ?? 'input';
 
-// Daftar status valid sesuai ENUM
+// Daftar status valid sesuai ENUM dashboard
 $valid_status = [
     'input',
     'emailed',
@@ -45,25 +43,22 @@ if (!in_array($status, $valid_status, true)) {
 
 try {
     $stmt = $pdo->prepare("
-        UPDATE crm 
-        SET 
-            name_person   = :name_person,
-            person_email  = :person_email,
-            phone_number  = :phone_number,
-            company_name  = :company_name,
-            status        = :status,
-            updated_at    = NOW()
-        WHERE company_email = :company_email
-    ");
+    UPDATE crm_contacts_staging 
+    SET 
+        nama_perusahaan = :nama_perusahaan,
+        no_telp1        = :no_telp1,
+        status          = :status,
+        updated_at      = NOW()
+    WHERE email = :email
+");
 
     $stmt->execute([
-        ':name_person'   => $name_person,
-        ':person_email'  => $person_email,
-        ':phone_number'  => $phone_number,
-        ':company_name'  => $company_name,
-        ':status'        => $status,
-        ':company_email' => $company_email
+        ':nama_perusahaan'  => $nama_perusahaan,
+        ':email'      => $email,
+        ':no_telp1'   => $no_telp1,
+        ':status'     => $status
     ]);
+
 
     // balik ke dashboard
     header("Location: dashboard.php?msg=updated");

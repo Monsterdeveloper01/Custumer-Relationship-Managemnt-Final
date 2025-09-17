@@ -55,7 +55,7 @@ $stats = $statsStmt->fetchAll(PDO::FETCH_ASSOC);
 <head>
     <meta charset="UTF-8">
     <title>Partner Dashboard</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="../Login/style.css">
     <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
@@ -113,6 +113,66 @@ $stats = $statsStmt->fetchAll(PDO::FETCH_ASSOC);
         .hidden {
             display: none;
         }
+
+        .btn-add-contact {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            /* dari 8px → lebih rapat */
+            padding: 10px 16px;
+            /* dari 12px 20px → lebih kecil */
+            font-size: 14px;
+            /* dari 15px → lebih kecil */
+            font-weight: 600;
+            color: #fff;
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            border: none;
+            border-radius: 10px;
+            /* dari 12px → lebih ramping */
+            cursor: pointer;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+            transition: all 0.25s ease-in-out;
+        }
+
+        .btn-add-contact .icon {
+            font-size: 16px;
+            /* dari 18px → lebih kecil */
+            font-weight: bold;
+        }
+
+        .btn-add-contact:hover {
+            background: linear-gradient(135deg, #1d4ed8, #1e40af);
+            box-shadow: 0 6px 14px rgba(0, 0, 0, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .btn-add-contact:active {
+            background: linear-gradient(135deg, #1e3a8a, #1e40af);
+            transform: translateY(0);
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+        }
+
+        .card-hint {
+            font-size: 13px;
+            color: #1e3a8a;
+            /* biru tua biar kontras */
+            background: #eef2ff;
+            /* biru muda lembut sebagai highlight */
+            border-left: 3px solid #3b82f6;
+            /* garis tegas di kiri */
+            padding: 6px 10px;
+            /* kasih ruang biar nyaman */
+            margin-top: 6px;
+            margin-bottom: 12px;
+            border-radius: 6px;
+            /* sudut agak membulat */
+            font-style: italic;
+        }
+
+        .dataTables_wrapper .dataTables_length,
+        .dataTables_wrapper .dataTables_filter {
+            margin-top: 16px;
+        }
     </style>
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -167,23 +227,27 @@ $stats = $statsStmt->fetchAll(PDO::FETCH_ASSOC);
         </div>
 
         <!-- Contact List -->
-        <!-- Contact List -->
         <div class="card info-card partner-list">
 
             <!-- Tombol Add Contact -->
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-xl font-semibold">Your List</h2>
-                <a href="add_contact.php"
-                    class="inline-flex items-center px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white shadow-md transition ease-in-out duration-150">
-                    + Add Contact
-                </a>
+                <!-- Panduan -->
+                <p class="card-hint">
+                    Daftar semua kontak yang sudah kamu input.
+                    Kamu bisa <b>tambah</b>, <b>edit</b>, <b>lihat detail</b>, atau <b>kirim email</b> langsung.
+                </p>
+                <button type="button" onclick="window.location.href='add_contact.php'" class="btn-add-contact">
+                    <span class="icon">＋</span>
+                    Add Contact
+                </button>
             </div>
 
             <table id="contactsTable" class="partner-table w-full border-collapse">
                 <thead>
                     <tr>
                         <th>#</th>
-                        <th>Contact Name</th>
+                        <th>Company Name</th>
                         <th>Email</th>
                         <th>Phone</th>
                         <th>Company</th>
@@ -196,7 +260,7 @@ $stats = $statsStmt->fetchAll(PDO::FETCH_ASSOC);
                         <?php foreach ($contacts as $i => $c): ?>
                             <tr>
                                 <td><?= $i + 1 ?></td>
-                                <td><?= htmlspecialchars($c['nama_orang'] ?? '-') ?></td>
+                                <td><?= htmlspecialchars($c['nama_perusahaan'] ?? '-') ?></td>
                                 <td><?= htmlspecialchars($c['email'] ?? '-') ?></td>
                                 <td><?= htmlspecialchars($c['no_telp1'] ?? '-') ?></td>
                                 <td><?= htmlspecialchars($c['kategori_perusahaan'] ?? '-') ?></td>
@@ -225,6 +289,11 @@ $stats = $statsStmt->fetchAll(PDO::FETCH_ASSOC);
         <!-- CRM Statistics -->
         <div class="card stats-card">
             <h2>CRM Status Overview</h2>
+            <!-- Panduan -->
+            <p class="card-hint">
+                Statistik perkembangan kontak berdasarkan status di pipeline CRM.
+                Bantu kamu memantau sejauh mana proses berjalan.
+            </p>
             <ul>
                 <?php foreach ($stats as $s): ?>
                     <li><?= htmlspecialchars($s['status']) ?>: <b><?= $s['total'] ?></b></li>
@@ -235,6 +304,11 @@ $stats = $statsStmt->fetchAll(PDO::FETCH_ASSOC);
         <!-- Company Directory -->
         <div class="card info-card">
             <h2>Company Directory</h2>
+            <!-- Panduan -->
+            <p class="card-hint">
+                Direktori semua perusahaan dari kontak kamu.
+                Klik link website untuk langsung menuju halaman perusahaan.
+            </p>
             <table id="companyTable" class="partner-table">
                 <thead>
                     <tr>
@@ -248,10 +322,10 @@ $stats = $statsStmt->fetchAll(PDO::FETCH_ASSOC);
                 <tbody>
                     <?php foreach ($contacts as $c): ?>
                         <tr>
+                            <td><?= htmlspecialchars($c['nama_perusahaan'] ?? '-') ?></td>
+                            <td><a href="<?= htmlspecialchars($c['website'] ?? '#') ?>" target="_blank">
+                                    <?= htmlspecialchars($c['website'] ?? '-') ?></a></td>
                             <td><?= htmlspecialchars($c['kategori_perusahaan'] ?? '-') ?></td>
-                            <td><a href="<?= htmlspecialchars($c['link_website'] ?? '#') ?>" target="_blank">
-                                    <?= htmlspecialchars($c['link_website'] ?? '-') ?></a></td>
-                            <td><?= htmlspecialchars($c['kategori_jabatan'] ?? '-') ?></td>
                             <td><?= htmlspecialchars($c['tipe'] ?? '-') ?></td>
                             <td><?= htmlspecialchars($c['kota'] ?? '-') ?></td>
                         </tr>
@@ -264,12 +338,15 @@ $stats = $statsStmt->fetchAll(PDO::FETCH_ASSOC);
         <!-- Details Section -->
         <div id="detailsSection" class="card info-card hidden">
             <h2>Contact & Company Details</h2>
+            <p class="text-sm text-gray-500 mt-1">
+                Detail lengkap kontak dan perusahaan. Klik tombol <b>Details</b> pada daftar kontak untuk melihat info di sini.
+            </p>
             <p id="detailsHint"><i>Klik salah satu tombol "Details" untuk melihat data.</i></p>
 
             <div id="detailsContent" style="display:none;">
                 <div class="card info-card">
                     <h3>Contact Person Details</h3>
-                    <p><b>Contact Name:</b> <span id="d_name_person"></span></p>
+                    <p><b>Company Name:</b> <span id="d_name_person"></span></p>
                     <p><b>Email:</b> <span id="d_person_email"></span></p>
                     <p><b>Phone:</b> <span id="d_phone_number"></span></p>
                     <p><b>Position Title:</b> <span id="d_position_title"></span></p>
@@ -285,6 +362,16 @@ $stats = $statsStmt->fetchAll(PDO::FETCH_ASSOC);
                     <p><b>Type:</b> <span id="d_company_type"></span></p>
                     <p><b>Address:</b> <span id="d_address"></span>, <span id="d_city"></span> (<span id="d_postcode"></span>)</p>
                 </div>
+                <!-- 🔹 Back to Top Button -->
+                <button id="backToTopBtn" class="btn" style="
+            margin-top:16px;
+            background:#2563eb;
+            color:white;
+            border:none;
+            padding:10px 16px;
+            border-radius:8px;
+            cursor:pointer;
+        " onclick="backToTop()">⬆ Back to Top</button>
             </div>
         </div>
 
@@ -293,16 +380,18 @@ $stats = $statsStmt->fetchAll(PDO::FETCH_ASSOC);
             <div class="modal-content">
                 <span class="close" onclick="closeModal()">&times;</span>
                 <h2>Edit Contact</h2>
+                <!-- Panduan -->
+                <p class="card-hint">
+                    Gunakan form ini untuk memperbarui data kontak. Pastikan email benar karena jadi acuan utama.
+                </p>
                 <form id="editForm" method="post" action="edit_contact.php">
                     <input type="hidden" name="company_email" id="edit_company_email">
-                    <label for="edit_name_person">Contact Name:</label>
-                    <input type="text" name="name_person" id="edit_name_person" required>
+                    <label for="edit_name_person">Company Name:</label>
+                    <input type="text" name="company_name" id="edit_company_name" required>
                     <label for="edit_person_email">Email:</label>
                     <input type="email" name="person_email" id="edit_person_email" required>
                     <label for="edit_phone_number">Phone:</label>
                     <input type="text" name="phone_number" id="edit_phone_number" required>
-                    <label for="edit_company_name">Company:</label>
-                    <input type="text" name="company_name" id="edit_company_name" required>
                     <label for="edit_status">Status:</label>
                     <select name="status" id="edit_status" required>
                         <option value="input">Input</option>
@@ -362,21 +451,21 @@ $stats = $statsStmt->fetchAll(PDO::FETCH_ASSOC);
             }
             if (activeButton) activeButton.textContent = "Details";
 
-            document.getElementById("d_name_person").textContent = contact.nama_orang || "-";
-            document.getElementById("d_person_email").textContent = contact.email2 || "-";
+            document.getElementById("d_name_person").textContent = contact.nama || "-";
+            document.getElementById("d_person_email").textContent = contact.email || "-";
             document.getElementById("d_phone_number").textContent = contact.no_telp1 || "-";
             document.getElementById("d_position_title").textContent = contact.jabatan_lengkap || "-";
             document.getElementById("d_position_category").textContent = contact.kategori_jabatan || "-";
             document.getElementById("d_phone2").textContent = contact.no_telp2 || "-";
 
-            document.getElementById("d_company_name").textContent = contact.kategori_perusahaan || "-";
-            document.getElementById("d_company_website").textContent = contact.link_website || "-";
-            document.getElementById("d_company_website").href = contact.link_website || "#";
+            document.getElementById("d_company_name").textContent = contact.nama_perusahaan || "-";
+            document.getElementById("d_company_website").textContent = contact.website || "-";
+            document.getElementById("d_company_website").href = contact.website || "#";
             document.getElementById("d_company_category").textContent = contact.kategori_perusahaan || "-";
             document.getElementById("d_company_type").textContent = contact.tipe || "-";
             document.getElementById("d_address").textContent = contact.alamat || "-";
             document.getElementById("d_city").textContent = contact.kota || "-";
-            document.getElementById("d_postcode").textContent = contact.postcode || "-";
+
 
 
             section.classList.remove("hidden");
@@ -385,20 +474,41 @@ $stats = $statsStmt->fetchAll(PDO::FETCH_ASSOC);
 
             btn.textContent = "Hide Details";
             activeButton = btn;
+            section.scrollIntoView({
+                behavior: "smooth"
+            });
+
         }
 
         function openEditModal(contact) {
-            document.getElementById("edit_company_email").value = contact.company_email;
-            document.getElementById("edit_name_person").value = contact.name_person;
-            document.getElementById("edit_person_email").value = contact.person_email;
-            document.getElementById("edit_phone_number").value = contact.phone_number;
-            document.getElementById("edit_company_name").value = contact.company_name;
+            document.getElementById("edit_person_email").value = contact.email;
+            document.getElementById("edit_company_name").value = contact.nama_perusahaan;
+            document.getElementById("edit_phone_number").value = contact.no_telp1;
             document.getElementById("edit_status").value = contact.status;
             document.getElementById("editModal").style.display = "block";
         }
 
+
         function closeModal() {
             document.getElementById("editModal").style.display = "none";
+        }
+
+        function backToTop() {
+            // Scroll ke atas dengan smooth
+            window.scrollTo({
+                top: 0,
+                behavior: "smooth"
+            });
+
+            // Hide details section
+            const section = document.getElementById("detailsSection");
+            section.classList.add("hidden");
+
+            // Reset tombol Details yang aktif
+            if (activeButton) {
+                activeButton.textContent = "Details";
+                activeButton = null;
+            }
         }
     </script>
 </body>

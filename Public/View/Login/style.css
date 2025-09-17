@@ -343,10 +343,9 @@ textarea:focus {
 }
 
 .partner-table th {
-  font-weight: 600;
+  font-weight: 600 ;
   color: #111827;
   font-size: 13px;
-  text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
@@ -570,6 +569,7 @@ textarea:focus {
         border-radius: 6px;
         padding: 4px;
     }
+    
 
     .btn.secondary {
   display: inline-block;
@@ -587,3 +587,4 @@ textarea:focus {
 .btn.secondary:hover {
   background-color: #d1d5db;
 }
+
