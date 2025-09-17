@@ -9,13 +9,13 @@ if (!isset($_SESSION['user'])) {
 }
 
 $partner = $_SESSION['user'];
-$marketing_id = $partner['marketing_id'];
+$marketing_id = $partner['marketing_id']; // contoh: PTR
 
-// Ambil contact lengkap dari CRM berdasarkan marketing_id
+// Ambil contact lengkap dari CRM berdasarkan ditemukan_oleh
 $sql = "
     SELECT *
-    FROM crm
-    WHERE marketing_id = ?
+    FROM crm_contacts_staging
+    WHERE ditemukan_oleh = ?
     ORDER BY FIELD(
         status,
         'input',
@@ -31,19 +31,24 @@ $sql = "
         'Deal / Closed',
         'Failed / Tidak Lanjut',
         'Postpone'
-    ) ASC, updated_at DESC
+    ) ASC
 ";
 $stmt = $pdo->prepare($sql);
 $stmt->execute([$marketing_id]);
 $contacts = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Statistik status
-$statsStmt = $pdo->prepare("SELECT status, COUNT(*) as total 
-                             FROM crm WHERE marketing_id = ? 
-                             GROUP BY status");
+$statsStmt = $pdo->prepare("
+    SELECT status, COUNT(*) as total 
+    FROM crm_contacts_staging 
+    WHERE ditemukan_oleh = ? 
+    GROUP BY status
+");
 $statsStmt->execute([$marketing_id]);
 $stats = $statsStmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
+
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -162,58 +167,59 @@ $stats = $statsStmt->fetchAll(PDO::FETCH_ASSOC);
         </div>
 
         <!-- Contact List -->
-<!-- Contact List -->
-<div class="card info-card partner-list">
+        <!-- Contact List -->
+        <div class="card info-card partner-list">
 
-    <!-- Tombol Add Contact -->
-    <div class="flex justify-between items-center mb-4">
-        <h2 class="text-xl font-semibold">Your List</h2>
-        <a href="add_contact.php"
-           class="inline-flex items-center px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white shadow-md transition ease-in-out duration-150">
-            + Add Contact
-        </a>
-    </div>
+            <!-- Tombol Add Contact -->
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold">Your List</h2>
+                <a href="add_contact.php"
+                    class="inline-flex items-center px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white shadow-md transition ease-in-out duration-150">
+                    + Add Contact
+                </a>
+            </div>
 
-    <table id="contactsTable" class="partner-table w-full border-collapse">
-        <thead>
-            <tr>
-                <th>#</th>
-                <th>Contact Name</th>
-                <th>Email</th>
-                <th>Phone</th>
-                <th>Company</th>
-                <th>Status</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php if (count($contacts) > 0): ?>
-                <?php foreach ($contacts as $i => $c): ?>
+            <table id="contactsTable" class="partner-table w-full border-collapse">
+                <thead>
                     <tr>
-                        <td><?= $i + 1 ?></td>
-                        <td><?= htmlspecialchars($c['name_person']) ?></td>
-                        <td><?= htmlspecialchars($c['company_email']) ?></td>
-                        <td><?= htmlspecialchars($c['phone_number']) ?></td>
-                        <td><?= htmlspecialchars($c['company_name']) ?></td>
-                        <td><?= htmlspecialchars($c['status']) ?></td>
-                        <td class="table-actions">
-                            <a href="../send_email.php?company_email=<?= urlencode($c['company_email']) ?>"
-                               class="btn email">Send Email</a>
-                            <a href="javascript:void(0);" class="btn edit"
-                               onclick='openEditModal(<?= json_encode($c) ?>)'>Edit</a>
-                            <a href="javascript:void(0);" class="btn details"
-                               onclick='toggleDetails(this, <?= json_encode($c) ?>)'>Details</a>
-                        </td>
+                        <th>#</th>
+                        <th>Contact Name</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                        <th>Company</th>
+                        <th>Status</th>
+                        <th>Actions</th>
                     </tr>
-                <?php endforeach; ?>
-            <?php else: ?>
-                <tr>
-                    <td colspan="7" style="text-align:center;">No contacts available</td>
-                </tr>
-            <?php endif; ?>
-        </tbody>
-    </table>
-</div>
+                </thead>
+                <tbody>
+                    <?php if (count($contacts) > 0): ?>
+                        <?php foreach ($contacts as $i => $c): ?>
+                            <tr>
+                                <td><?= $i + 1 ?></td>
+                                <td><?= htmlspecialchars($c['nama_orang'] ?? '-') ?></td>
+                                <td><?= htmlspecialchars($c['email'] ?? '-') ?></td>
+                                <td><?= htmlspecialchars($c['no_telp1'] ?? '-') ?></td>
+                                <td><?= htmlspecialchars($c['kategori_perusahaan'] ?? '-') ?></td>
+                                <td><?= htmlspecialchars($c['status'] ?? '-') ?></td>
+                                <td class="table-actions">
+                                    <a href="../send_email.php?email=<?= urlencode($c['email'] ?? '') ?>"
+                                        class="btn email">Send Email</a>
+                                    <a href="javascript:void(0);" class="btn edit"
+                                        onclick='openEditModal(<?= json_encode($c) ?>)'>Edit</a>
+                                    <a href="javascript:void(0);" class="btn details"
+                                        onclick='toggleDetails(this, <?= json_encode($c) ?>)'>Details</a>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <tr>
+                            <td colspan="7" style="text-align:center;">No contacts available</td>
+                        </tr>
+                    <?php endif; ?>
+                </tbody>
+
+            </table>
+        </div>
 
 
         <!-- CRM Statistics -->
@@ -242,14 +248,16 @@ $stats = $statsStmt->fetchAll(PDO::FETCH_ASSOC);
                 <tbody>
                     <?php foreach ($contacts as $c): ?>
                         <tr>
-                            <td><?= htmlspecialchars($c['company_name']) ?></td>
-                            <td><a href="<?= htmlspecialchars($c['company_website']) ?>" target="_blank"><?= htmlspecialchars($c['company_website']) ?></a></td>
-                            <td><?= htmlspecialchars($c['company_category']) ?></td>
-                            <td><?= htmlspecialchars($c['company_type']) ?></td>
-                            <td><?= htmlspecialchars($c['city']) ?></td>
+                            <td><?= htmlspecialchars($c['kategori_perusahaan'] ?? '-') ?></td>
+                            <td><a href="<?= htmlspecialchars($c['link_website'] ?? '#') ?>" target="_blank">
+                                    <?= htmlspecialchars($c['link_website'] ?? '-') ?></a></td>
+                            <td><?= htmlspecialchars($c['kategori_jabatan'] ?? '-') ?></td>
+                            <td><?= htmlspecialchars($c['tipe'] ?? '-') ?></td>
+                            <td><?= htmlspecialchars($c['kota'] ?? '-') ?></td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>
+
             </table>
         </div>
 
@@ -354,21 +362,22 @@ $stats = $statsStmt->fetchAll(PDO::FETCH_ASSOC);
             }
             if (activeButton) activeButton.textContent = "Details";
 
-            document.getElementById("d_name_person").textContent = contact.name_person || "-";
-            document.getElementById("d_person_email").textContent = contact.person_email || "-";
-            document.getElementById("d_phone_number").textContent = contact.phone_number || "-";
-            document.getElementById("d_position_title").textContent = contact.contact_person_position_title || "-";
-            document.getElementById("d_position_category").textContent = contact.contact_person_position_category || "-";
-            document.getElementById("d_phone2").textContent = contact.phone_number2 || "-";
+            document.getElementById("d_name_person").textContent = contact.nama_orang || "-";
+            document.getElementById("d_person_email").textContent = contact.email2 || "-";
+            document.getElementById("d_phone_number").textContent = contact.no_telp1 || "-";
+            document.getElementById("d_position_title").textContent = contact.jabatan_lengkap || "-";
+            document.getElementById("d_position_category").textContent = contact.kategori_jabatan || "-";
+            document.getElementById("d_phone2").textContent = contact.no_telp2 || "-";
 
-            document.getElementById("d_company_name").textContent = contact.company_name || "-";
-            document.getElementById("d_company_website").textContent = contact.company_website || "-";
-            document.getElementById("d_company_website").href = contact.company_website || "#";
-            document.getElementById("d_company_category").textContent = contact.company_category || "-";
-            document.getElementById("d_company_type").textContent = contact.company_type || "-";
-            document.getElementById("d_address").textContent = contact.address || "-";
-            document.getElementById("d_city").textContent = contact.city || "-";
+            document.getElementById("d_company_name").textContent = contact.kategori_perusahaan || "-";
+            document.getElementById("d_company_website").textContent = contact.link_website || "-";
+            document.getElementById("d_company_website").href = contact.link_website || "#";
+            document.getElementById("d_company_category").textContent = contact.kategori_perusahaan || "-";
+            document.getElementById("d_company_type").textContent = contact.tipe || "-";
+            document.getElementById("d_address").textContent = contact.alamat || "-";
+            document.getElementById("d_city").textContent = contact.kota || "-";
             document.getElementById("d_postcode").textContent = contact.postcode || "-";
+
 
             section.classList.remove("hidden");
             hint.style.display = "none";
