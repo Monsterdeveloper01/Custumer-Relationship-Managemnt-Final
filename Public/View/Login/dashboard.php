@@ -58,6 +58,8 @@ $stats = $statsStmt->fetchAll(PDO::FETCH_ASSOC);
     <link rel="stylesheet" href="../Login/style.css">
     <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- chart -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
         .welcome {
@@ -294,11 +296,9 @@ $stats = $statsStmt->fetchAll(PDO::FETCH_ASSOC);
                 Statistik perkembangan kontak berdasarkan status di pipeline CRM.
                 Bantu kamu memantau sejauh mana proses berjalan.
             </p>
-            <ul>
-                <?php foreach ($stats as $s): ?>
-                    <li><?= htmlspecialchars($s['status']) ?>: <b><?= $s['total'] ?></b></li>
-                <?php endforeach; ?>
-            </ul>
+            <div class="chart-container" style="width:100%; max-width:500px; margin:auto;">
+                <canvas id="statusChart"></canvas>
+            </div>
         </div>
 
         <!-- Company Directory -->
@@ -510,6 +510,43 @@ $stats = $statsStmt->fetchAll(PDO::FETCH_ASSOC);
                 activeButton = null;
             }
         }
+
+
+        const statusData = <?= json_encode($stats) ?>;
+
+        const labels = statusData.map(s => s.status);
+        const data = statusData.map(s => s.total);
+
+        const ctx = document.getElementById('statusChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'doughnut', // bisa ganti 'bar' kalau mau
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Jumlah Kontak',
+                    data: data,
+                    backgroundColor: [
+                        '#3b82f6', '#10b981', '#8b5cf6',
+                        '#f59e0b', '#ef4444', '#6366f1',
+                        '#14b8a6', '#ec4899', '#22c55e',
+                        '#0ea5e9', '#f43f5e', '#84cc16',
+                        '#a855f7'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            boxWidth: 14,
+                            padding: 10
+                        }
+                    }
+                }
+            }
+        });
     </script>
 </body>
 
