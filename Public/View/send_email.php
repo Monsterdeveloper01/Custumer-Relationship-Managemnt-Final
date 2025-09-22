@@ -11,45 +11,71 @@ $mid             = current_marketing_id();
 $marketing_name  = $_SESSION['user']['name'];
 $marketing_email = $_SESSION['user']['email'];
 
-/** Ambil semua perusahaan yang ditemukan oleh marketing ini */
-$stmt = $pdo->prepare("SELECT email, nama_perusahaan, nama
+/** Ambil semua perusahaan beserta ditemukan_oleh */
+$stmt = $pdo->prepare("SELECT email, nama_perusahaan, nama, ditemukan_oleh
                        FROM crm_contacts_staging
                        WHERE ditemukan_oleh = :mid");
 $stmt->execute(['mid' => $mid]);
 $companies = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 $info            = '';
-$selectedEmail   = $_GET['email'] ?? ''; // email yg dipilih
+$selectedEmail   = $_GET['email'] ?? '';
 $default_subject = '';
 $default_body    = '';
 $selectedCompany = null;
 
 /**
  * Buat template pesan default
+ * $promoCode akan diisi dengan nilai field ditemukan_oleh
  */
-function build_default_message(array $company, string $marketing_name): array {
-    $perusahaan = $company['nama_perusahaan'];
+function build_default_message(array $company,
+                               string $marketing_name,
+                               string $promoCode): array {
+    $perusahaan       = $company['nama_perusahaan'];
     $namaOrPerusahaan = $company['nama'] ?: $perusahaan;
 
-    $subject = "Kesempatan Kerja Sama antara PT Rayterton Indonesia & {$perusahaan}";
-    $body    = "Halo {$namaOrPerusahaan},\n\n"
-             . "Perkenalkan, saya {$marketing_name} dari PT Rayterton Indonesia. "
-             . "Saya menghubungi Bapak/Ibu karena melihat potensi kerja sama yang baik "
-             . "antara PT Rayterton Indonesia dan {$perusahaan}.\n\n"
-             . "Apakah Bapak/Ibu berkenan meluangkan waktu untuk diskusi singkat minggu ini?\n\n"
-             . "Salam,\n{$marketing_name}";
+    $subject = "Penawaran Solusi Perangkat Lunak & Pelatihan Bisnis - Tanpa Risiko Awal";
+
+    $body  = "Kepada Yth. {$namaOrPerusahaan},\n\n";
+    $body .= "Perkenalkan, saya {$marketing_name} dari PT Rayterton Indonesia.\n\n";
+    $body .= "Kami menyediakan solusi perangkat lunak bisnis yang dirancang khusus "
+          .  "untuk mendukung proses dan laporan unik di perusahaan Anda. "
+          .  "Seluruh pengembangan dilakukan tanpa biaya di awal, pembayaran hanya dilakukan "
+          .  "setelah sistem selesai diuji dan dinyatakan siap digunakan.\n\n";
+    $body .= "Keunggulan layanan kami antara lain:\n"
+          .  "• 100% Tanpa Risiko – Pembayaran dilakukan hanya setelah sistem terbukti layak pakai.\n"
+          .  "• Fleksibilitas Tinggi – Modul dapat disesuaikan sesuai perkembangan bisnis.\n"
+          .  "• Kepemilikan Penuh – Hak cipta dan hak intelektual sepenuhnya menjadi milik perusahaan Anda.\n"
+          .  "• Pemeliharaan dan Pembaruan Gratis – Termasuk seluruh pembaruan tahunan tanpa biaya tambahan.\n\n";
+    $body .= "Selain itu, kami juga menghadirkan **Rayterton Academy**, program pelatihan teknologi "
+          .  "dan bisnis berbasis praktik yang dipandu oleh para profesional berpengalaman, "
+          .  "untuk meningkatkan kompetensi digital tim Anda.\n\n";
+    $body .= "Sebagai bentuk apresiasi, kami menawarkan **kode promo khusus** berikut:\n"
+          .  "Kode Promo: {$promoCode}\n\n";
+    $body .= "Gunakan kode tersebut untuk memperoleh penawaran istimewa paket perangkat lunak dan pelatihan dari kami.\n\n";
+    $body .= "Hormat kami,\n"
+          .  "{$marketing_name}\n"
+          .  "PT Rayterton Indonesia";
+
     return [$subject, $body];
 }
 
-/* --- Jika user memilih perusahaan (GET/POST tanpa kirim email) --- */
+
+/* --- Jika user memilih perusahaan --- */
 if ($selectedEmail || (isset($_POST['email']) && !isset($_POST['send_email']))) {
     $email = $selectedEmail ?: $_POST['email'];
     $stmt  = $pdo->prepare("SELECT * FROM crm_contacts_staging
                              WHERE email = :cid AND ditemukan_oleh = :mid");
     $stmt->execute(['cid' => $email, 'mid' => $mid]);
-    $selectedCompany = $stmt->fetch();
+    $selectedCompany = $stmt->fetch(PDO::FETCH_ASSOC);
     if ($selectedCompany) {
-        [$default_subject, $default_body] = build_default_message($selectedCompany, $marketing_name);
+        // gunakan field ditemukan_oleh sebagai promo code
+        $promoCode = $selectedCompany['ditemukan_oleh'];
+        [$default_subject, $default_body] = build_default_message(
+            $selectedCompany,
+            $marketing_name,
+            $promoCode
+        );
         $selectedEmail = $selectedCompany['email'];
     }
 }
