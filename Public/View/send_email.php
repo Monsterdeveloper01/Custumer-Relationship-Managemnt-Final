@@ -53,12 +53,17 @@ function build_default_message(array $company,
     $body .= "Sebagai bentuk apresiasi, kami menawarkan **kode promo khusus** berikut:\n"
           .  "Kode Promo: {$promoCode}\n\n";
     $body .= "Gunakan kode tersebut untuk memperoleh penawaran istimewa paket perangkat lunak dan pelatihan dari kami.\n\n";
+    // Pindahkan link ke bagian bawah
+    $body .= "Informasi lebih lanjut:\n";
+    $body .= "• Rayterton Academy: https://raytertonacademy.com/\n";
+    $body .= "• Rayterton: https://rayterton.com/\n\n";
     $body .= "Hormat kami,\n"
           .  "{$marketing_name}\n"
           .  "PT Rayterton Indonesia";
 
     return [$subject, $body];
 }
+
 
 
 /* --- Jika user memilih perusahaan --- */
