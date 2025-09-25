@@ -1,8 +1,9 @@
 /* CONTENT */
 .container {
   max-width: 1200px;
-  margin: auto;
+  margin: 0 auto;
   padding: 40px 24px;
+  padding-top: calc(64px + 32px); /* tinggi header + extra gap */
 }
 
 .title {
@@ -587,4 +588,5 @@ textarea:focus {
 .btn.secondary:hover {
   background-color: #d1d5db;
 }
+
 

@@ -14,9 +14,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         $account = null;
 
-        // 1. Cari di users
+        // 1. Cari di users (ambil role juga)
         $stmt = $pdo->prepare("
-            SELECT marketing_id, name, email, password, 'user' AS source
+            SELECT marketing_id, name, email, password, role, 'user' AS source
             FROM users
             WHERE email = :email
             LIMIT 1
@@ -24,10 +24,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->execute([':email' => $email]);
         $account = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        // 2. Kalau belum ketemu → cek di individual_promocodes
+        // 2. Kalau belum ketemu → cek di individual_promocodes (role default user)
         if (!$account) {
             $stmt = $pdo->prepare("
-                SELECT marketing_id, nama_lengkap AS name, email, password, 'individual' AS source
+                SELECT marketing_id, nama_lengkap AS name, email, password, 'user' AS role, 'individual' AS source
                 FROM individual_promocodes
                 WHERE email = :email
                 LIMIT 1
@@ -36,10 +36,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $account = $stmt->fetch(PDO::FETCH_ASSOC);
         }
 
-        // 3. Kalau masih belum ketemu → cek di institusi_partner
+        // 3. Kalau masih belum ketemu → cek di institusi_partner (role default user)
         if (!$account) {
             $stmt = $pdo->prepare("
-                SELECT marketing_id, nama_partner AS name, email, password, 'institution' AS source
+                SELECT marketing_id, nama_partner AS name, email, password, 'user' AS role, 'institution' AS source
                 FROM institusi_partner
                 WHERE email = :email
                 LIMIT 1
@@ -55,11 +55,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'marketing_id' => $account['marketing_id'],
                     'name'         => $account['name'],
                     'email'        => $account['email'],
+                    'role'         => $account['role'],   // <<=== simpan role
                     'source'       => $account['source']
                 ];
 
-                // redirect ke dashboard
-                header("Location: dashboard.php");
+                // redirect berdasarkan role (opsional)
+                if ($account['role'] === 'admin') {
+                    header("Location: dashboard_admin.php");
+                } else {
+                    header("Location: dashboard.php");
+                }
                 exit;
             } else {
                 $error = "Invalid password!";
@@ -72,16 +77,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <title>User Login</title>
-    <link rel="stylesheet" href="../Login/style.css">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
+    <!-- Header -->
+    <header class="bg-white shadow-md border-b border-gray-200 fixed top-0 w-full z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+
+                <!-- Logo + Label -->
+                <div class="flex items-center">
+                    <div class="flex items-center">
+                        <img src="../../assets/img/rayterton-apps-software-logo.png"
+                            alt="Logo"
+                            class="h-10 w-auto"
+                            style="width: 175px; height: 50px;">
+                        <span class="ml-3 text-lg font-semibold text-gray-900 hidden md:block">
+                            Customer Relationship Management
+                        </span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </header>
+
+
     <div class="container">
         <h1 class="title">Login</h1>
         <p class="subtitle">Login with your registered account to access your CRM data.</p>

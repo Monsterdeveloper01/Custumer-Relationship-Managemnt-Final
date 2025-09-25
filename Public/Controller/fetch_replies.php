@@ -95,5 +95,5 @@ if ($emails) {
 imap_close($inbox);
 
 // Redirect otomatis ke view_replies.php
-header("Location: ../View/view_replies.php");
+header("Location: ../View/Login/view_replies.php");
 exit;
