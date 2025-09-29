@@ -70,9 +70,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-function h($s) {
-    return htmlspecialchars($s ?? '', ENT_QUOTES, 'UTF-8');
-}
+// function h($s) {
+//     return htmlspecialchars($s ?? '', ENT_QUOTES, 'UTF-8');
+// }
 ?>
 
 <!doctype html>

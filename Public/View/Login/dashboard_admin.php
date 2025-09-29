@@ -336,6 +336,10 @@ Marketing Partner PT Rayterton Indonesia
                         Daftar semua kontak yang sudah diinput oleh semua partner.
                         Kamu bisa <b>edit</b>, <b>lihat detail</b>, atau <b>kirim email</b> langsung.
                     </p>
+                    <button type="button" onclick="window.location.href='add_contact.php'" class="btn-add-contact">
+                        <span class="icon">＋</span>
+                        Add Contact
+                    </button>
                 </div>
                 <div class="overflow-x-auto">
                     <table id="contactsTable" class="partner-table w-full border-collapse">
