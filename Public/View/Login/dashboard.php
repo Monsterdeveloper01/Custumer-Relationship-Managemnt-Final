@@ -8,6 +8,12 @@ if (!isset($_SESSION['user'])) {
     exit;
 }
 
+if (($_SESSION['user']['role'] ?? '') === 'admin') {
+    header("Location: dashboard_admin.php");
+    exit;
+}
+
+
 $partner = $_SESSION['user'];
 $marketing_id = $partner['marketing_id']; // contoh: PTR
 $isPartner = ($partner['role'] === 'partner');

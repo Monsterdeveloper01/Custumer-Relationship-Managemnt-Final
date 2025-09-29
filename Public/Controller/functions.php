@@ -16,9 +16,9 @@ function current_marketing_id() {
 }
 
 // Fungsi helper untuk escape HTML
-// function h($s) {
-//     return htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
-// }
+function h($s) {
+    return htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
+}
 
 // Fungsi helper untuk normalisasi status
 function normStatus($status) {

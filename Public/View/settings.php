@@ -19,7 +19,7 @@ $user = $_SESSION['user']; // dari login
 <body class="bg-gray-50 min-h-screen font-sans" x-data="{ sidebarOpen: false }">
 
     <!-- Header -->
-    <?php include("Partials/Header.html"); ?>
+    <?php include("./Partials"); ?>
 
     <!-- Main Content -->
     <main class="max-w-6xl mx-auto px-4 py-8">

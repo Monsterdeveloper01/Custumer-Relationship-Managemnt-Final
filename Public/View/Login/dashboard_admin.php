@@ -8,6 +8,20 @@ if (!isset($_SESSION['user'])) {
     exit;
 }
 
+function normalize_email($val)
+{
+    $val = trim($val ?? '');
+    // buang prefix mailto:
+    if (stripos($val, 'mailto:') === 0) {
+        $val = substr($val, 7);
+    }
+    // jika format mailto pernah membawa query (?subject=...), ambil sebelum '?'
+    if (($qpos = strpos($val, '?')) !== false) {
+        $val = substr($val, 0, $qpos);
+    }
+    return $val;
+}
+
 // Cek apakah user role admin
 $partner = $_SESSION['user'];
 if (($partner['role'] ?? '') !== 'admin') {
@@ -78,13 +92,53 @@ $statusList = [
 <head>
     <meta charset="UTF-8">
     <title>Partner Dashboard</title>
-    <link rel="stylesheet" href="../Login/style.css">
+
     <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <!-- chart -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            200: '#bfdbfe',
+                            300: '#93c5fd',
+                            400: '#60a5fa',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#1e3a8a'
+                        },
+                        dark: {
+                            50: '#f8fafc',
+                            100: '#f1f5f9',
+                            200: '#e2e8f0',
+                            300: '#cbd5e1',
+                            400: '#94a3b8',
+                            500: '#64748b',
+                            600: '#475569',
+                            700: '#334155',
+                            800: '#1e293b',
+                            900: '#0f172a'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- AlpineJS -->
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
     <style>
         .welcome {
             margin-bottom: 24px;
@@ -199,7 +253,14 @@ $statusList = [
         .dataTables_wrapper .dataTables_filter {
             margin-top: 16px;
         }
+
+        .btn.delete {
+            background: #fee2e2;
+            color: #b91c1c;
+            border: 1px solid #fecaca;
+        }
     </style>
+
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <!-- DataTables -->
@@ -208,37 +269,10 @@ $statusList = [
 </head>
 
 <body>
-    <div class="topbar">
-        <div class="topbar-left">
-            <h1 class="topbar-title">Rayterton CRM Admin </h1>
-        </div>
-        <div class="topbar-right">
-            <form id="logoutForm" action="logout.php" method="post">
-                <button type="button" class="btn logout" onclick="confirmLogout()">Logout</button>
-            </form>
 
-            <script>
-                function confirmLogout() {
-                    Swal.fire({
-                        title: 'Yakin mau logout?',
-                        text: "Kamu akan keluar dari dashboard",
-                        icon: 'warning',
-                        showCancelButton: true,
-                        confirmButtonColor: '#d33',
-                        cancelButtonColor: '#3085d6',
-                        confirmButtonText: 'Ya, logout!',
-                        cancelButtonText: 'Batal'
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            document.getElementById("logoutForm").submit();
-                        }
-                    });
-                }
-            </script>
-        </div>
-    </div>
+    <?php include("../Partials/Header.html"); ?>
 
-    <div class="container">
+    <div class="max-w-6xl mx-auto p-6 space-y-6">
         <h1 class="title">Admin Dashboard</h1>
         <p class="subtitle">Manage all contacts from CRM across all partners.</p>
 
@@ -266,56 +300,55 @@ $statusList = [
                         Kamu bisa <b>edit</b>, <b>lihat detail</b>, atau <b>kirim email</b> langsung.
                     </p>
                 </div>
-
-                <table id="contactsTable" class="partner-table w-full border-collapse">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Company Name</th>
-                            <th>Email</th>
-                            <th>Phone</th>
-                            <th>Company</th>
-                            <!-- 🔹 Tambahin kolom Marketing ID -->
-                            <th>Marketing ID</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php if (count($contacts) > 0): ?>
-                            <?php foreach ($contacts as $i => $c): ?>
-                                <tr>
-                                    <td><?= $i + 1 ?></td>
-                                    <td><?= htmlspecialchars($c['nama_perusahaan'] ?? '-') ?></td>
-                                    <td><?= htmlspecialchars($c['email'] ?? '-') ?></td>
-                                    <td><?= htmlspecialchars($c['no_telp1'] ?? '-') ?></td>
-                                    <td><?= htmlspecialchars($c['kategori_perusahaan'] ?? '-') ?></td>
-                                    <!-- 🔹 Isi Marketing ID dari field ditemukan_oleh -->
-                                    <td><?= htmlspecialchars($c['ditemukan_oleh'] ?? '-') ?></td>
-                                    <td><?= htmlspecialchars($c['status'] ?? '-') ?></td>
-                                    <td class="table-actions">
-                                        <?php if (($c['status'] ?? '') === 'input'): ?>
-                                            <a href="../send_email.php?email=<?= urlencode($c['email'] ?? '') ?>"
-                                                class="btn email">Send Email</a>
-                                        <?php else: ?>
-                                            <button class="btn email" style="opacity:0.5; cursor:not-allowed;" disabled>
-                                                Send Email
-                                            </button>
-                                        <?php endif; ?>
-                                        <a href="javascript:void(0);" class="btn edit"
-                                            onclick='openEditModal(<?= json_encode($c) ?>)'>Edit</a>
-                                        <a href="javascript:void(0);" class="btn details"
-                                            onclick='toggleDetails(this, <?= json_encode($c) ?>)'>Details</a>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        <?php else: ?>
+                <div class="overflow-x-auto">
+                    <table id="contactsTable" class="partner-table w-full border-collapse">
+                        <thead>
                             <tr>
-                                <td colspan="8" style="text-align:center;">No contacts available</td>
+                                <th>#</th>
+                                <th>Company Name</th>
+                                <th>Email</th>
+                                <th>Phone</th>
+                                <th>Company</th>
+                                <!-- 🔹 Tambahin kolom Marketing ID -->
+                                <th>Marketing ID</th>
+                                <th>Status</th>
+                                <th>Actions</th>
                             </tr>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            <?php if (count($contacts) > 0): ?>
+                                <?php foreach ($contacts as $i => $c): ?>
+                                    <?php $emailClean = normalize_email($c['email'] ?? ''); ?>
+                                    <tr>
+                                        <td><?= $i + 1 ?></td>
+                                        <td><?= htmlspecialchars($c['nama_perusahaan'] ?? '-') ?></td>
+                                        <td><?= htmlspecialchars($emailClean ?: '-') ?></td>
+                                        <td><?= htmlspecialchars($c['no_telp1'] ?? '-') ?></td>
+                                        <td><?= htmlspecialchars($c['kategori_perusahaan'] ?? '-') ?></td>
+                                        <td><?= htmlspecialchars($c['ditemukan_oleh'] ?? '-') ?></td>
+                                        <td><?= htmlspecialchars($c['status'] ?? '-') ?></td>
+                                        <td class="table-actions">
+                                            <?php if (($c['status'] ?? '') === 'input' && $emailClean): ?>
+                                                <a href="send_email.php?email=<?= urlencode($emailClean) ?>" class="btn email">Send Email</a>
+                                            <?php else: ?>
+                                                <button class="btn email" style="opacity:0.5; cursor:not-allowed;" disabled>Send Email</button>
+                                            <?php endif; ?>
+                                            <a href="javascript:void(0);" class="btn edit" onclick='openEditModal(<?= json_encode($c) ?>)'>Edit</a>
+                                            <a href="javascript:void(0);" class="btn details" onclick='toggleDetails(this, <?= json_encode($c) ?>)'>Details</a>
+                                            <button class="btn delete" onclick='confirmDelete("<?= htmlspecialchars(addslashes($c['email'] ?? '')) ?>")'>Delete</button>
+
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+
+                            <?php else: ?>
+                                <tr>
+                                    <td colspan="8" style="text-align:center;">No contacts available</td>
+                                </tr>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
 
@@ -465,6 +498,41 @@ $statusList = [
     </div>
 
     <script>
+        function confirmDelete(email) {
+            if (!email || email === '-') {
+                Swal.fire('Error', 'Email tidak valid untuk dihapus.', 'error');
+                return;
+            }
+
+            Swal.fire({
+                title: 'Yakin hapus kontak ini?',
+                text: "Data ini akan dihapus permanen!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Ya, hapus!',
+                cancelButtonText: 'Batal',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.post('delete_contact.php', {
+                        email: email
+                    }, function(response) {
+                        let res = JSON.parse(response);
+                        if (res.success) {
+                            Swal.fire('Terhapus!', 'Kontak berhasil dihapus.', 'success').then(() => {
+                                // Reload halaman agar data terbaru muncul
+                                location.reload();
+                            });
+                        } else {
+                            Swal.fire('Gagal!', res.error || 'Terjadi kesalahan.', 'error');
+                        }
+                    }).fail(function() {
+                        Swal.fire('Error', 'Gagal menghubungi server.', 'error');
+                    });
+                }
+            });
+        }
+
         $(document).ready(function() {
             var table = $('#contactsTable').DataTable({
                 pageLength: 5,
@@ -577,7 +645,7 @@ $statusList = [
         }
 
         function openEditModal(contact) {
-            document.getElementById("edit_company_email").value = contact.email; 
+            document.getElementById("edit_company_email").value = contact.email;
             document.getElementById("edit_person_email").value = contact.email;
             document.getElementById("edit_company_name").value = contact.nama_perusahaan;
             document.getElementById("edit_phone_number").value = contact.no_telp1;

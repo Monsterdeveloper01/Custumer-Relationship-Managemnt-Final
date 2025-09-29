@@ -133,7 +133,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_email'])) {
     }
 }
 
-function h($v) { return htmlspecialchars($v, ENT_QUOTES, 'UTF-8'); }
+// function h($v) { return htmlspecialchars($v, ENT_QUOTES, 'UTF-8'); }
 ?>
 <!DOCTYPE html>
 <html lang="id">

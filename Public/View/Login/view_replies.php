@@ -12,6 +12,7 @@ $replies = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -99,14 +100,49 @@ $replies = $stmt->fetchAll(PDO::FETCH_ASSOC);
     .progress-bar {
       transition: width 1s ease-in-out;
     }
+
+    .btn-add-contact {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 16px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #fff;
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+            transition: all 0.25s ease-in-out;
+            margin-top: 20px;
+        }
+
+        .btn-add-contact .icon {
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .btn-add-contact:hover {
+            background: linear-gradient(135deg, #1d4ed8, #1e40af);
+            box-shadow: 0 6px 14px rgba(0, 0, 0, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .btn-add-contact:active {
+            background: linear-gradient(135deg, #1e3a8a, #1e40af);
+            transform: translateY(0);
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+        }
   </style>
 </head>
+
 <body class="bg-gray-100 min-h-screen">
 
-      <!-- Header -->
+  <!-- Header -->
   <?php include("../Partials/Header.html"); ?>
 
-  <div class="max-w-6xl mx-auto py-10 px-4">
+  <div class="max-w-6xl mx-auto py-20 px-4 m-4">
     <h1 class="text-2xl font-bold mb-6 text-gray-800">📩 Daftar Balasan Email</h1>
 
     <?php if (empty($replies)): ?>
@@ -135,14 +171,14 @@ $replies = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 </td>
                 <td class="px-4 py-2 text-sm text-gray-500"><?= $reply['created_at'] ?? '-' ?></td>
                 <td class="px-4 py-2 text-center">
-                  <button 
+                  <button
                     class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm"
                     onclick="openModal(
-                      '<?= htmlspecialchars(addslashes($reply['from_email'])) ?>',
-                      '<?= htmlspecialchars(addslashes($reply['subject'])) ?>',
-                      `<?= htmlspecialchars(addslashes($reply['body'])) ?>`,
-                      '<?= $reply['created_at'] ?? '-' ?>'
-                    )">
+                    '<?= htmlspecialchars(addslashes($reply['from_email'])) ?>',
+                    '<?= htmlspecialchars(addslashes($reply['subject'])) ?>',
+                    `<?= htmlspecialchars(addslashes($reply['body'])) ?>`,
+                    '<?= $reply['created_at'] ?? '-' ?>'
+                  )">
                     Detail
                   </button>
                 </td>
@@ -152,6 +188,10 @@ $replies = $stmt->fetchAll(PDO::FETCH_ASSOC);
         </table>
       </div>
     <?php endif; ?>
+    <button type="button" onclick="window.location.href='dashboard.php'" class="btn-add-contact">
+                    
+                    Back to dashboard
+                </button>
   </div>
 
   <!-- Modal -->
@@ -184,4 +224,5 @@ $replies = $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
   </script>
 </body>
+
 </html>
