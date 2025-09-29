@@ -28,7 +28,13 @@ if (($partner['role'] ?? '') !== 'admin') {
     die("Akses ditolak: hanya admin yang bisa masuk dashboard ini.");
 }
 
-// Ambil semua contact (tanpa filter marketing_id)
+// Pagination setup
+$limit = 20;
+$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+if ($page < 1) $page = 1;
+$offset = ($page - 1) * $limit;
+
+// Ambil contact dengan pagination
 $sql = "
     SELECT *
     FROM crm_contacts_staging
@@ -48,9 +54,18 @@ $sql = "
         'Failed / Tidak Lanjut',
         'Postpone'
     ) ASC
+    LIMIT :limit OFFSET :offset
 ";
-$stmt = $pdo->query($sql);
+$stmt = $pdo->prepare($sql);
+$stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+$stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+$stmt->execute();
 $contacts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Hitung total data (untuk pagination link)
+$totalStmt = $pdo->query("SELECT COUNT(*) FROM crm_contacts_staging");
+$totalContacts = $totalStmt->fetchColumn();
+$totalPages = ceil($totalContacts / $limit);
 
 // Statistik status (tanpa filter marketing_id)
 $statsStmt = $pdo->query("
@@ -284,6 +299,28 @@ $statusList = [
                 </h2>
                 <p>You are logged in as <b>Administrator</b>.</p>
             </div>
+        </div>
+
+        <div class="card email-format">
+            <div class="flex justify-between items-center mb-4 flex-col sm:flex-row">
+                <div class="welcome-text">
+                    <h2>
+                        Berikut contoh form isi email:
+                    </h2>
+                </div>
+                <p class="card-hint">
+                    Gunakan format ini saat mengirim email ke calon client.
+                </p>
+            </div>
+            <textarea class="form-control w-full" rows="7" readonly style="width:100%; resize:none;">
+Kepada Yth Bapak/Ibu/Sdr [Nama Calon Client] 
+[Jabatan Calon Client] 
+[Nama PT Calon Client] 
+
+Hormat kami,  
+[Nama Anda sebagai Marketing]  
+Marketing Partner PT Rayterton Indonesia
+    </textarea>
         </div>
 
         <!-- Contact List -->

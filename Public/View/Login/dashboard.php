@@ -18,11 +18,16 @@ $partner = $_SESSION['user'];
 $marketing_id = $partner['marketing_id']; // contoh: PTR
 $isPartner = ($partner['role'] === 'partner');
 
-// Ambil contact lengkap dari CRM berdasarkan ditemukan_oleh
+// Pagination setup
+$limit = 20;
+$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+if ($page < 1) $page = 1;
+$offset = ($page - 1) * $limit;
+
+// Ambil contact dengan pagination
 $sql = "
     SELECT *
     FROM crm_contacts_staging
-    WHERE ditemukan_oleh = ?
     ORDER BY FIELD(
         status,
         'input',
@@ -39,9 +44,12 @@ $sql = "
         'Failed / Tidak Lanjut',
         'Postpone'
     ) ASC
+    LIMIT :limit OFFSET :offset
 ";
 $stmt = $pdo->prepare($sql);
-$stmt->execute([$marketing_id]);
+$stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+$stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+$stmt->execute();
 $contacts = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 function normalize_email($val)
@@ -290,6 +298,28 @@ $statusList = [
                 </h2>
                 <p>Your Marketing ID: <b><?= htmlspecialchars($partner['marketing_id']) ?></b></p>
             </div>
+        </div>
+
+        <div class="card email-format">
+            <div class="flex justify-between items-center mb-4 flex-col sm:flex-row">
+                <div class="welcome-text">
+                    <h2>
+                        Berikut contoh form isi email:
+                    </h2>
+                </div>
+                <p class="card-hint">
+                    Gunakan format ini saat mengirim email ke calon client.
+                </p>
+            </div>
+            <textarea class="form-control w-full" rows="7" readonly style="width:100%; resize:none;">
+Kepada Yth Bapak/Ibu/Sdr [Nama Calon Client] 
+[Jabatan Calon Client] 
+[Nama PT Calon Client] 
+
+Hormat kami,  
+[Nama Anda sebagai Marketing]  
+Marketing Partner PT Rayterton Indonesia
+    </textarea>
         </div>
 
         <!-- Contact List -->
