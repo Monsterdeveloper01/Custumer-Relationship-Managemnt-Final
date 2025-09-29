@@ -1,6 +1,8 @@
 <?php
 session_start();
+// require '../../backend_secure/crm/db.php';
 require '../../Model/db.php';
+require_once __DIR__ . '/../../Controller/functions.php';
 
 // Kalau belum login, tendang ke login
 if (!isset($_SESSION['user'])) {
@@ -12,22 +14,26 @@ if (($_SESSION['user']['role'] ?? '') === 'admin') {
     header("Location: dashboard_admin.php");
     exit;
 }
+// function h($s) { return htmlspecialchars($s ?? '', ENT_QUOTES, 'UTF-8'); }
 
 
 $partner = $_SESSION['user'];
 $marketing_id = $partner['marketing_id']; // contoh: PTR
 $isPartner = ($partner['role'] === 'partner');
 
-// Pagination setup
-$limit = 20;
-$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-if ($page < 1) $page = 1;
-$offset = ($page - 1) * $limit;
+// Cek jumlah data CRM untuk marketing ini
+$stmtCount = $pdo->prepare("SELECT COUNT(*) FROM crm_contacts_staging WHERE ditemukan_oleh = ?");
+$stmtCount->execute([$marketing_id]);
+$totalByFinder = (int)$stmtCount->fetchColumn();
 
-// Ambil contact dengan pagination
+// Tentukan apakah harus tampilkan modal
+$showWelcomeModal = ($totalByFinder === 0);
+
+// Ambil contact lengkap dari CRM berdasarkan ditemukan_oleh
 $sql = "
     SELECT *
     FROM crm_contacts_staging
+    WHERE ditemukan_oleh = ?
     ORDER BY FIELD(
         status,
         'input',
@@ -44,12 +50,9 @@ $sql = "
         'Failed / Tidak Lanjut',
         'Postpone'
     ) ASC
-    LIMIT :limit OFFSET :offset
 ";
 $stmt = $pdo->prepare($sql);
-$stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
-$stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
-$stmt->execute();
+$stmt->execute([$marketing_id]);
 $contacts = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 function normalize_email($val)
@@ -100,6 +103,130 @@ $statusList = [
     "Failed / Tidak Lanjut" => "#dc2626",
     "Postpone" => "#6b7280",
 ];
+
+$limit = 0; // 0 artinya: jika sudah punya >=1 contact, form tidak muncul
+$canShowForm = ($totalByFinder <= $limit); // true bila belum pernah input
+
+// Status list (seragam dgn halaman lain)
+$statuses = [
+    'input',
+    'emailed',
+    'presentation',
+    'NDA process',
+    'Gap analysis / requirement analysis',
+    'SIT (System Integration Testing)',
+    'UAT (User Acceptance Testing)',
+    'Proposal',
+    'Negotiation',
+    'Deal / Closed',
+    'Failed / Tidak Lanjut',
+    'Postpone'
+];
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Jika form disubmit sementara canShowForm false, tolak
+    if (!$canShowForm) {
+        $errors[] = "Tambah contact dinonaktifkan karena akun marketing ini sudah memiliki contact sebelumnya.";
+    } else {
+        // Ambil input + sanitasi secukupnya
+        $email_input = trim($_POST['email'] ?? '');
+        $email = filter_var($email_input, FILTER_SANITIZE_EMAIL);
+        $email_lain_input = trim($_POST['email_lain'] ?? '');
+        $email_lain = $email_lain_input !== '' ? filter_var($email_lain_input, FILTER_SANITIZE_EMAIL) : '';
+
+        $nama_perusahaan = trim($_POST['nama_perusahaan'] ?? '');
+        $nama = trim($_POST['nama'] ?? '');
+        $kategori_perusahaan = trim($_POST['kategori_perusahaan'] ?? '');
+        $kategori_jabatan = trim($_POST['kategori_jabatan'] ?? '');
+        $jabatan_lengkap = trim($_POST['jabatan_lengkap'] ?? '');
+        $tipe = trim($_POST['tipe'] ?? '');
+        $no_telp1 = trim($_POST['no_telp1'] ?? '');
+        $no_telp2 = trim($_POST['no_telp2'] ?? '');
+        $website = trim($_POST['website'] ?? '');
+        $alamat = trim($_POST['alamat'] ?? '');
+        $kota = trim($_POST['kota'] ?? '');
+        $status = $_POST['status'] ?? 'input';
+
+        // Simpan nilai untuk redisplay
+        $old = compact(
+            'email',
+            'email_lain',
+            'nama_perusahaan',
+            'nama',
+            'kategori_perusahaan',
+            'kategori_jabatan',
+            'jabatan_lengkap',
+            'tipe',
+            'no_telp1',
+            'no_telp2',
+            'website',
+            'alamat',
+            'kota',
+            'status'
+        );
+
+        // Validasi minimum
+        if ($email === '') {
+            $errors['email'] = "Email perusahaan wajib diisi.";
+        } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $errors['email'] = "Format email tidak valid.";
+        }
+        if ($nama_perusahaan === '') {
+            $errors['nama_perusahaan'] = "Nama perusahaan wajib diisi.";
+        }
+        if ($tipe === '') {
+            $errors['tipe'] = "Tipe perusahaan wajib dipilih.";
+        }
+        if ($email_lain !== '' && !filter_var($email_lain, FILTER_VALIDATE_EMAIL)) {
+            $errors['email_lain'] = "Format secondary email tidak valid.";
+        }
+        if ($website !== '' && !filter_var($website, FILTER_VALIDATE_URL)) {
+            $errors['website'] = "Format URL website tidak valid.";
+        }
+
+        // Cek unik email
+        if (empty($errors)) {
+            $cek = $pdo->prepare("SELECT COUNT(*) FROM crm_contacts_staging WHERE email = ?");
+            $cek->execute([$email]);
+            if ((int)$cek->fetchColumn() > 0) {
+                $errors['email'] = "Email perusahaan sudah terdaftar.";
+            }
+        }
+
+        // Insert
+        if (empty($errors)) {
+            $stmt = $pdo->prepare("INSERT INTO crm_contacts_staging
+                (nama_perusahaan, email, email_lain, nama, no_telp1, no_telp2, website,
+                 kategori_perusahaan, kategori_jabatan, jabatan_lengkap, tipe,
+                 kota, alamat, ditemukan_oleh, status)
+                VALUES
+                (:nama_perusahaan, :email, :email_lain, :nama, :no_telp1, :no_telp2, :website,
+                 :kategori_perusahaan, :kategori_jabatan, :jabatan_lengkap, :tipe,
+                 :kota, :alamat, :ditemukan_oleh, :status)");
+            $stmt->execute([
+                ':nama_perusahaan' => $nama_perusahaan,
+                ':email' => $email,
+                ':email_lain' => $email_lain,
+                ':nama' => $nama,
+                ':no_telp1' => $no_telp1,
+                ':no_telp2' => $no_telp2,
+                ':website' => $website,
+                ':kategori_perusahaan' => $kategori_perusahaan,
+                ':kategori_jabatan' => $kategori_jabatan,
+                ':jabatan_lengkap' => $jabatan_lengkap,
+                ':tipe' => $tipe,
+                ':kota' => $kota,
+                ':alamat' => $alamat,
+                ':ditemukan_oleh' => $marketing_id,
+                ':status' => in_array($status, $statuses, true) ? $status : 'input'
+            ]);
+
+            header("Location: dashboard.php");
+            exit;
+        }
+    }
+}
+
 ?>
 
 
@@ -109,7 +236,31 @@ $statusList = [
 <head>
     <meta charset="UTF-8">
     <title>Partner Dashboard</title>
+    <style>
+        .input-base {
+            @apply w-full rounded-xl border p-3 shadow-sm transition;
+        }
 
+        .input-focus {
+            @apply focus:border-blue-500 focus:ring-2 focus:ring-blue-400;
+        }
+
+        .input-error {
+            @apply border-red-400 focus:ring-red-300;
+        }
+
+        .label-base {
+            @apply block text-sm font-semibold text-gray-700;
+        }
+
+        .help-text {
+            @apply text-xs text-gray-500 mt-1;
+        }
+
+        .error-text {
+            @apply text-xs text-red-600 mt-1;
+        }
+    </style>
     <!-- Tailwind -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -275,6 +426,74 @@ $statusList = [
             background: #C7D2FE;
             color: #1E3A8A;
         }
+
+        .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: white;
+    padding: 30px;
+    border-radius: 16px;
+    max-width: 500px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+}
+
+.modal-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+}
+
+.modal-title {
+    font-size: 24px;
+    font-weight: bold;
+    color: #1e3a8a;
+    margin-bottom: 12px;
+}
+
+.modal-text {
+    font-size: 16px;
+    color: #4b5563;
+    margin-bottom: 24px;
+    line-height: 1.5;
+}
+
+.modal-buttons {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.btn-secondary {
+    background: #f3f4f6;
+    color: #374151;
+    border: 1px solid #d1d5db;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+}
     </style>
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -284,7 +503,27 @@ $statusList = [
 </head>
 
 <body>
-    <?php include("../Partials/Header.html"); ?>
+    <?php include("../Partials/Header.html"); ?>    
+
+            <!-- Welcome Modal untuk Marketing Baru -->
+    <?php if ($showWelcomeModal): ?>
+    <div id="welcomeModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-icon">🎉</div>
+            <h2 class="modal-title">Selamat Datang di CRM Dashboard!</h2>
+            <p class="modal-text">
+                Halo <strong><?= htmlspecialchars($partner['name'] ?? 'Partner') ?></strong>!<br>
+                Kami melihat ini adalah pertama kalinya Anda mengakses dashboard CRM.<br>
+                Mari mulai dengan menambahkan calon client pertama Anda.
+            </p>
+            <div class="modal-buttons">
+                <button class="btn-secondary" onclick="closeWelcomeModal()">Nanti Saja</button>
+                <button class="btn-primary" onclick="scrollToContactForm()">Tambah Client Pertama</button>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
+
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-20 space-y-8">
         <h1 class="title">Partner Dashboard</h1>
@@ -322,6 +561,8 @@ Marketing Partner PT Rayterton Indonesia
     </textarea>
         </div>
 
+
+
         <!-- Contact List -->
         <div class="card info-card partner-list">
             <!-- Tombol Add Contact -->
@@ -343,6 +584,8 @@ Marketing Partner PT Rayterton Indonesia
                 </button>
             </div>
 
+
+
             <div class="overflow-x-auto">
                 <table id="contactsTable" class="partner-table w-full border-collapse">
                     <thead>
@@ -357,32 +600,27 @@ Marketing Partner PT Rayterton Indonesia
                         </tr>
                     </thead>
                     <tbody>
-                        <?php if (count($contacts) > 0): ?>
-                            <?php foreach ($contacts as $i => $c): ?>
-                                <?php $emailClean = normalize_email($c['email'] ?? ''); ?>
-                                <tr>
-                                    <td><?= $i + 1 ?></td>
-                                    <td><?= htmlspecialchars($c['nama_perusahaan'] ?? '-') ?></td>
-                                    <td><?= htmlspecialchars($emailClean ?: '-') ?></td>
-                                    <td><?= htmlspecialchars($c['no_telp1'] ?? '-') ?></td>
-                                    <td><?= htmlspecialchars($c['kategori_perusahaan'] ?? '-') ?></td>
-                                    <td><?= htmlspecialchars($c['status'] ?? '-') ?></td>
-                                    <td class="table-actions">
-                                        <?php if (($c['status'] ?? '') === 'input' && $emailClean && empty($isPartner)): ?>
-                                            <button type="button" class="btn email" onclick="previewEmail('<?= $emailClean ?>')">Send Email</button>
-                                        <?php else: ?>
-                                            <button class="btn email" style="opacity:0.5; cursor:not-allowed;" disabled>Send Email</button>
-                                        <?php endif; ?>
-                                        <a href="javascript:void(0);" class="btn details" onclick='toggleDetails(this, <?= json_encode($c) ?>)'>Details</a>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        <?php else: ?>
+                        <?php foreach ($contacts as $i => $c): ?>
+                            <?php $emailClean = normalize_email($c['email'] ?? ''); ?>
                             <tr>
-                                <td colspan="7" style="text-align:center;">No contacts available</td>
+                                <td><?= $i + 1 ?></td>
+                                <td><?= htmlspecialchars($c['nama_perusahaan'] ?? '-') ?></td>
+                                <td><?= htmlspecialchars($emailClean ?: '-') ?></td>
+                                <td><?= htmlspecialchars($c['no_telp1'] ?? '-') ?></td>
+                                <td><?= htmlspecialchars($c['kategori_perusahaan'] ?? '-') ?></td>
+                                <td><?= htmlspecialchars($c['status'] ?? '-') ?></td>
+                                <td class="table-actions">
+                                    <?php if (($c['status'] ?? '') === 'input' && $emailClean && empty($isPartner)): ?>
+                                        <button type="button" class="btn email" onclick="previewEmail('<?= $emailClean ?>')">Send Email</button>
+                                    <?php else: ?>
+                                        <button class="btn email" style="opacity:0.5; cursor:not-allowed;" disabled>Send Email</button>
+                                    <?php endif; ?>
+                                    <a href="javascript:void(0);" class="btn details" onclick='toggleDetails(this, <?= json_encode($c) ?>)'>Details</a>
+                                </td>
                             </tr>
-                        <?php endif; ?>
+                        <?php endforeach; ?>
                     </tbody>
+
                 </table>
             </div>
         </div>
@@ -552,11 +790,32 @@ Marketing Partner PT Rayterton Indonesia
     </div>
 
     <script>
+                // Fungsi untuk modal welcome
+        function closeWelcomeModal() {
+            const modal = document.getElementById('welcomeModal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        function scrollToContactForm() {
+            window.location.href = 'add_contact.php';
+        }
+
+        // Tutup modal jika klik di luar konten modal
+        document.addEventListener('click', function(event) {
+            const modal = document.getElementById('welcomeModal');
+            if (modal && event.target === modal) {
+                closeWelcomeModal();
+            }
+        });
+
+
         $(document).ready(function() {
             var table = $('#contactsTable').DataTable({
                 pageLength: 5,
                 lengthMenu: [5, 10, 25, 50],
-                ordering: false, // ⛔️ disable sorting di semua kolom
+                ordering: false, // ⛔ disable sorting di semua kolom
                 columnDefs: [{
                     orderable: false,
                     targets: "_all" // pastikan semua kolom tidak bisa di-sort
@@ -793,6 +1052,13 @@ Marketing Partner PT Rayterton Indonesia
 
                 document.getElementById('emailPreviewModal').classList.remove('hidden');
             });
+        }
+
+        function closeEmailPreview() {
+            const modal = document.getElementById("emailPreviewModal"); // pastikan ID modal sesuai
+            if (modal) {
+                modal.classList.add("hidden"); // sembunyikan modal
+            }
         }
     </script>
 </body>
