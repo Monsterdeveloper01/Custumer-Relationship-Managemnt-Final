@@ -316,13 +316,15 @@ foreach ($partners_individual as $partner) {
                             <tr>
                                 <th>#</th>
                                 <th>Ref ID</th>
+                                <th>Promo Code</th>
                                 <th>Institution Name</th>
                                 <th>Email</th>
                                 <th>WhatsApp</th>
                                 <th>Bank Account</th>
-                                <th>Institution Code</th>
-                                <th>Status</th>
+                                <th>Profil Jaringan</th>
                                 <th>Industry Focus</th>
+                                <th>Referral Awal</th>
+                                <th>Status</th>
                                 <th>Registration Date</th>
                                 <th>Actions</th>
                             </tr>
@@ -332,6 +334,7 @@ foreach ($partners_individual as $partner) {
                                 <tr>
                                     <td><?= $i + 1 ?></td>
                                     <td><code><?= htmlspecialchars($partner['ref_id']) ?></code></td>
+                                    <td><code><?= htmlspecialchars($partner['kode_institusi']) ?></code></td>
                                     <td><?= htmlspecialchars($partner['nama_institusi']) ?></td>
                                     <td><?= htmlspecialchars($partner['email']) ?></td>
                                     <td><?= htmlspecialchars($partner['whatsapp']) ?></td>
@@ -339,13 +342,14 @@ foreach ($partners_individual as $partner) {
                                         <?= htmlspecialchars($partner['nama_bank']) ?><br>
                                         <small><?= htmlspecialchars($partner['no_rekening']) ?></small>
                                     </td>
-                                    <td><code><?= htmlspecialchars($partner['kode_institusi']) ?></code></td>
+                                    <td><?= htmlspecialchars($partner['profil_jaringan'] ?? '-') ?></td>
+                                    <td><?= htmlspecialchars($partner['segment_industri_fokus'] ?? '-') ?></td>
+                                    <td><?= htmlspecialchars($partner['referral_awal'] ?? '-') ?></td>
                                     <td>
                                         <span class="status-badge status-<?= strtolower($partner['active_status']) ?>">
                                             <?= $partner['active_status'] ?>
                                         </span>
                                     </td>
-                                    <td><?= htmlspecialchars($partner['segment_industri_fokus'] ?? '-') ?></td>
                                     <td><?= date('d M Y H:i', strtotime($partner['created_at'])) ?></td>
                                     <td>
                                         <div class="flex gap-2">
