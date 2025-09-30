@@ -33,7 +33,6 @@ $limit = 20;
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 if ($page < 1) $page = 1;
 $offset = ($page - 1) * $limit;
-
 // Ambil contact dengan pagination
 $sql = "
     SELECT *
@@ -61,11 +60,6 @@ $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
 $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
 $stmt->execute();
 $contacts = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-// Hitung total data (untuk pagination link)
-$totalStmt = $pdo->query("SELECT COUNT(*) FROM crm_contacts_staging");
-$totalContacts = $totalStmt->fetchColumn();
-$totalPages = ceil($totalContacts / $limit);
 
 // Statistik status (tanpa filter marketing_id)
 $statsStmt = $pdo->query("
@@ -106,6 +100,8 @@ $statusList = [
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
     <title>Partner Dashboard</title>
 
     <!-- SweetAlert2 -->
@@ -274,6 +270,52 @@ $statusList = [
             color: #b91c1c;
             border: 1px solid #fecaca;
         }
+
+        /* Supaya semua elemen ikut lebar layar */
+        body,
+        html {
+            max-width: 100%;
+            overflow-x: hidden;
+        }
+
+        /* Supaya card shrink di layar kecil */
+        .svc-card,
+        .welcome-card {
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        /* Grid fleksibel */
+        .svc-panel {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+
+        /* Responsive text */
+        h2,
+        h3,
+        h4,
+        p,
+        span {
+            word-wrap: break-word;
+        }
+
+        /* Button full width di HP */
+        @media (max-width: 640px) {
+
+            .btn,
+            button {
+                width: 100%;
+                margin-top: 0.5rem;
+            }
+
+            .welcome-card,
+            .svc-card {
+                padding: 1rem;
+                font-size: 0.9rem;
+            }
+        }
     </style>
 
     <!-- jQuery -->
@@ -283,7 +325,7 @@ $statusList = [
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 </head>
 
-<body>
+<body x-data="{ sidebarOpen: false }">
 
     <?php include("../Partials/Header.html"); ?>
 
@@ -304,23 +346,26 @@ $statusList = [
         <div class="card email-format">
             <div class="flex justify-between items-center mb-4 flex-col sm:flex-row">
                 <div class="welcome-text">
-                    <h2>
-                        Berikut contoh form isi email:
-                    </h2>
+                    <h2>Berikut contoh form isi email:</h2>
                 </div>
-                <p class="card-hint">
-                    Gunakan format ini saat mengirim email ke calon client.
-                </p>
+                <div class="flex items-center gap-2">
+                    <label for="langSelect" class="text-sm">Pilih Bahasa:</label>
+                    <select id="langSelect" class="border rounded p-1">
+                        <option value="id">Indonesia</option>
+                        <option value="en">English</option>
+                    </select>
+                </div>
             </div>
-            <textarea class="form-control w-full" rows="7" readonly style="width:100%; resize:none;">
-Kepada Yth Bapak/Ibu/Sdr [Nama Calon Client] 
-[Jabatan Calon Client] 
-[Nama PT Calon Client] 
+            <p class="card-hint mb-2">
+                Email format ini yang akan digunakan saat klik send email ke calon client
+            </p>
 
-Hormat kami,  
-[Nama Anda sebagai Marketing]  
-Marketing Partner PT Rayterton Indonesia
-    </textarea>
+            <textarea id="emailPreview"
+                class="form-control w-full"
+                rows="18"
+                readonly
+                style="width:100%; resize:none;">
+  </textarea>
         </div>
 
         <!-- Contact List -->
@@ -369,8 +414,8 @@ Marketing Partner PT Rayterton Indonesia
                                         <td><?= htmlspecialchars($c['ditemukan_oleh'] ?? '-') ?></td>
                                         <td><?= htmlspecialchars($c['status'] ?? '-') ?></td>
                                         <td class="table-actions">
-                                            <?php if (($c['status'] ?? '') === 'input' && $emailClean): ?>
-                                                <a href="send_email.php?email=<?= urlencode($emailClean) ?>" class="btn email">Send Email</a>
+                                            <?php if (($c['status'] ?? '') === 'input' && $emailClean && empty($isPartner)): ?>
+                                                <button type="button" class="btn email" onclick="previewEmail('<?= $emailClean ?>')">Send Email</button>
                                             <?php else: ?>
                                                 <button class="btn email" style="opacity:0.5; cursor:not-allowed;" disabled>Send Email</button>
                                             <?php endif; ?>
@@ -389,6 +434,29 @@ Marketing Partner PT Rayterton Indonesia
                             <?php endif; ?>
                         </tbody>
                     </table>
+                </div>
+            </div>
+
+            <div id="emailPreviewModal"
+                class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                <div class="bg-white rounded-lg shadow-lg p-6 max-w-lg w-full">
+                    <h2 class="text-xl font-semibold mb-4">Email Preview</h2>
+                    <p><b>To:</b> <span id="previewEmailTo"></span></p>
+                    <p><b>Subject:</b> <span id="previewSubject"></span></p>
+                    <p class="mt-2"><b>Message:</b></p>
+
+                    <!-- Hanya bagian pesan yang discroll -->
+                    <div id="previewMessage"
+                        class="border p-3 rounded mt-1 bg-gray-50 whitespace-pre-line 
+                max-h-64 overflow-y-auto">
+                    </div>
+
+                    <div class="flex justify-end gap-3 mt-6">
+                        <button onclick="closeEmailPreview()"
+                            class="px-4 py-2 bg-gray-300 rounded">Cancel</button>
+                        <button id="confirmSendBtn"
+                            class="px-4 py-2 bg-blue-600 text-white rounded">Send Now</button>
+                    </div>
                 </div>
             </div>
 
@@ -423,40 +491,42 @@ Marketing Partner PT Rayterton Indonesia
                     Direktori semua perusahaan dari kontak kamu.
                     Klik link website untuk langsung menuju halaman perusahaan.
                 </p>
-                <table id="companyTable" class="partner-table">
-                    <thead>
-                        <tr>
-                            <th>Company</th>
-                            <th>Website</th>
-                            <th>Category</th>
-                            <th>Type</th>
-                            <th>City</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php
-                        // Urutkan supaya data dengan website/nama_perusahaan TIDAK kosong ditampilkan dulu
-                        usort($contacts, function ($a, $b) {
-                            $aEmpty = empty($a['nama_perusahaan']) && empty($a['website']);
-                            $bEmpty = empty($b['nama_perusahaan']) && empty($b['website']);
-                            return $aEmpty <=> $bEmpty; // yang kosong taruh di bawah
-                        });
-                        ?>
-                        <?php foreach ($contacts as $c): ?>
+                <div class="overflow-x-auto">
+                    <table id="companyTable" class="partner-table">
+                        <thead>
                             <tr>
-                                <td><?= htmlspecialchars($c['nama_perusahaan'] ?? '-') ?></td>
-                                <td>
-                                    <a href="<?= htmlspecialchars($c['website'] ?? '#') ?>" target="_blank">
-                                        <?= htmlspecialchars($c['website'] ?? '-') ?>
-                                    </a>
-                                </td>
-                                <td><?= htmlspecialchars($c['kategori_perusahaan'] ?? '-') ?></td>
-                                <td><?= htmlspecialchars($c['tipe'] ?? '-') ?></td>
-                                <td><?= htmlspecialchars($c['kota'] ?? '-') ?></td>
+                                <th>Company</th>
+                                <th>Website</th>
+                                <th>Category</th>
+                                <th>Type</th>
+                                <th>City</th>
                             </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            <?php
+                            // Urutkan supaya data dengan website/nama_perusahaan TIDAK kosong ditampilkan dulu
+                            usort($contacts, function ($a, $b) {
+                                $aEmpty = empty($a['nama_perusahaan']) && empty($a['website']);
+                                $bEmpty = empty($b['nama_perusahaan']) && empty($b['website']);
+                                return $aEmpty <=> $bEmpty; // yang kosong taruh di bawah
+                            });
+                            ?>
+                            <?php foreach ($contacts as $c): ?>
+                                <tr>
+                                    <td><?= htmlspecialchars($c['nama_perusahaan'] ?? '-') ?></td>
+                                    <td>
+                                        <a href="<?= htmlspecialchars($c['website'] ?? '#') ?>" target="_blank">
+                                            <?= htmlspecialchars($c['website'] ?? '-') ?>
+                                        </a>
+                                    </td>
+                                    <td><?= htmlspecialchars($c['kategori_perusahaan'] ?? '-') ?></td>
+                                    <td><?= htmlspecialchars($c['tipe'] ?? '-') ?></td>
+                                    <td><?= htmlspecialchars($c['kota'] ?? '-') ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             <!-- Details Section -->
@@ -795,6 +865,117 @@ Marketing Partner PT Rayterton Indonesia
                 }
             },
             plugins: [ChartDataLabels]
+        });
+
+        function previewEmail(email) {
+            $.getJSON("email_preview.php", {
+                email: email
+            }, function(res) {
+                if (res.error) {
+                    Swal.fire("Error", res.error, "error");
+                    return;
+                }
+
+                document.getElementById('previewEmailTo').textContent = res.email;
+                document.getElementById('previewSubject').textContent = res.subject;
+                document.getElementById('previewMessage').innerHTML = res.body;
+
+                document.getElementById('confirmSendBtn').onclick = function() {
+                    window.location.href = 'send_email.php?email=' + encodeURIComponent(email);
+                };
+
+                document.getElementById('emailPreviewModal').classList.remove('hidden');
+            });
+        }
+
+        function closeEmailPreview() {
+            const modal = document.getElementById("emailPreviewModal"); // pastikan ID modal sesuai
+            if (modal) {
+                modal.classList.add("hidden"); // sembunyikan modal
+            }
+        }
+
+        const emailTemplates = {
+            id: `Kepada Yth. Bapak/Ibu [Nama Calon Client]
+[Jabatan Calon Client]
+[Nama PT Calon Client]
+
+Perkenalkan, saya [Nama Anda sebagai Marketing] dari PT Rayterton Indonesia.
+
+Kami menawarkan solusi software IT dan bisnis dengan prinsip 100% Tanpa Risiko. 
+Software kami bersifat bestfit yang sepenuhnya bisa disesuaikan dengan proses dan kebutuhan bisnis Anda. 
+Tim kami dapat melakukan kustomisasi tanpa batas hingga benar-benar sesuai, semua tanpa biaya atau perjanjian di muka. 
+Proposal baru akan dikirim setelah software kami lolos uji (User Acceptance Testing / UAT) dan siap untuk go live di perusahaan Anda. 100% Risk Free. 
+Tersedia untuk berbagai industri seperti Banking, Multifinance, Insurance, Manufacturing, Retail, Distribution, Government/Ministry/BUMN/BUMD, 
+Oil and Gas, Transportation & Logistics, Hotels and Hospitality, Travel, Property, dan lainnya.
+
+https://www.rayterton.com
+
+Kami juga menyediakan jasa IT Consulting dan Management Consulting 100% Risk Free. 
+Dokumen konsultasi di awal (sebelum eksekusi) dapat Anda peroleh tanpa biaya di muka dan tanpa perjanjian terlebih dahulu.
+
+https://www.rayterton.com/it-consulting.php
+https://www.rayterton.com/management-consulting.php
+
+Selain itu, kami menyediakan Rayterton Academy, program training pelatihan praktis IT, Business and Finance, Entrepreneurship, Leadership, serta Management dan Career, 
+yang membantu meningkatkan kompetensi tim Anda dalam lingkungan bisnis digital yang terus berkembang. 
+Program ini juga membantu mempercepat perkembangan karir Anda dan rekan-rekan Anda.
+
+https://www.raytertonacademy.com
+
+Sebagai apresiasi, kami berikan kode promo berikut:
+Kode Promo: [Kode Promo]
+Gunakan kode ini untuk mendapatkan penawaran khusus dari kami.
+
+Hormat kami,
+[Nama Anda sebagai Marketing]
+Marketing Consultant/Partner
+PT Rayterton Indonesia`,
+
+            en: `Dear Mr./Ms. [Client Name]
+[Client Position]
+[Client Company Name]
+
+My name is [Your Name as Marketing] from PT Rayterton Indonesia.
+
+We provide software solutions, IT consulting, and management consulting under a 100% Risk-Free principle. 
+Our best-fit software can be fully customized to your business processes and requirements. 
+Unlimited customization until it perfectly fits—no upfront cost or agreement. 
+A proposal will only be sent after our software passes User Acceptance Testing (UAT) and is ready to go live. 
+This service is available for various industries such as Banking, Multifinance, Insurance, Manufacturing, Retail, Distribution, Government/Ministry/State-Owned Enterprises, 
+Oil and Gas, Transportation & Logistics, Hotels and Hospitality, Travel, Property, and more.
+
+https://www.rayterton.com
+
+We also provide IT Consulting and Management Consulting 100% Risk Free. 
+Initial consulting documents (before execution) are available without any upfront cost or agreement.
+
+https://www.rayterton.com/it-consulting.php
+https://www.rayterton.com/management-consulting.php
+
+Additionally, Rayterton Academy offers practical training in IT, Business and Finance, Entrepreneurship, Leadership, as well as Management and Career development, 
+helping to enhance your team's competence in today's evolving digital business environment. 
+This program also accelerates career growth for you and your colleagues.
+
+https://www.raytertonacademy.com
+
+Promo Code: [Promo Code]
+Use this code to access our special offer.
+
+Best regards,
+[Your Name as Marketing]
+Marketing Consultant/Partner
+PT Rayterton Indonesia`
+        };
+
+        const langSelect = document.getElementById("langSelect");
+        const emailPreview = document.getElementById("emailPreview");
+
+        // default ke Indonesia
+        emailPreview.value = emailTemplates["id"];
+
+        langSelect.addEventListener("change", (e) => {
+            emailPreview.value = emailTemplates[e.target.value];
         });
     </script>
 </body>
