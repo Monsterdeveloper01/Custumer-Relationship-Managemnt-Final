@@ -28,44 +28,58 @@ if (($partner['role'] ?? '') !== 'admin') {
     die("Akses ditolak: hanya admin yang bisa masuk dashboard ini.");
 }
 
-// Pagination setup
-$limit = 20;
-$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-if ($page < 1) $page = 1;
-$offset = ($page - 1) * $limit;
+// 🔹 AMBIL DATA UNTUK COMPANY DIRECTORY (limited untuk performance)
+// // 🔹 AMBIL SEMUA DATA TANPA FILTER
+// $companyStmt = $pdo->query("
+//     SELECT 
+//         COALESCE(NULLIF(nama_perusahaan, ''), 'No Company Name') as nama_perusahaan, 
+//         COALESCE(NULLIF(website, ''), '-') as website,
+//         COALESCE(NULLIF(kategori_perusahaan, ''), '-') as kategori_perusahaan, 
+//         COALESCE(NULLIF(tipe, ''), '-') as tipe, 
+//         COALESCE(NULLIF(kota, ''), '-') as kota
+//     FROM crm_contacts_staging 
+//     ORDER BY nama_perusahaan
+// ");
+// $companyContacts = $companyStmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Ambil contact dengan pagination
-$sql = "
-    SELECT *
-    FROM crm_contacts_staging
-    ORDER BY FIELD(
-        status,
-        'input',
-        'emailed',
-        'contacted',
-        'presentation',
-        'NDA process',
-        'Gap analysis / requirement analysis',
-        'SIT (System Integration Testing)',
-        'UAT (User Acceptance Testing)',
-        'Proposal',
-        'Negotiation',
-        'Deal / Closed',
-        'Failed / Tidak Lanjut',
-        'Postpone'
-    ) ASC
-    LIMIT :limit OFFSET :offset
-";
-$stmt = $pdo->prepare($sql);
-$stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
-$stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
-$stmt->execute();
-$contacts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+// // Pagination setup
+// $limit = 20;
+// $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+// if ($page < 1) $page = 1;
+// $offset = ($page - 1) * $limit;
 
-// Hitung total data (untuk pagination link)
-$totalStmt = $pdo->query("SELECT COUNT(*) FROM crm_contacts_staging");
-$totalContacts = $totalStmt->fetchColumn();
-$totalPages = ceil($totalContacts / $limit);
+// // Ambil contact dengan pagination
+// $sql = "
+//     SELECT *
+//     FROM crm_contacts_staging
+//     ORDER BY FIELD(
+//         status,
+//         'input',
+//         'emailed',
+//         'contacted',
+//         'presentation',
+//         'NDA process',
+//         'Gap analysis / requirement analysis',
+//         'SIT (System Integration Testing)',
+//         'UAT (User Acceptance Testing)',
+//         'Proposal',
+//         'Negotiation',
+//         'Deal / Closed',
+//         'Failed / Tidak Lanjut',
+//         'Postpone'
+//     ) ASC
+//     LIMIT :limit OFFSET :offset
+// ";
+// $stmt = $pdo->prepare($sql);
+// $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+// $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+// $stmt->execute();
+// $contacts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// // Hitung total data (untuk pagination link)
+// $totalStmt = $pdo->query("SELECT COUNT(*) FROM crm_contacts_staging");
+// $totalContacts = $totalStmt->fetchColumn();
+// $totalPages = ceil($totalContacts / $limit);
 
 // Statistik status (tanpa filter marketing_id)
 $statsStmt = $pdo->query("
@@ -274,6 +288,21 @@ $statusList = [
             color: #b91c1c;
             border: 1px solid #fecaca;
         }
+
+        /* Loading spinner */
+.spinner-border {
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    border: 0.2em solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: spinner-border .75s linear infinite;
+}
+
+@keyframes spinner-border {
+    to { transform: rotate(360deg); }
+}
     </style>
 
     <!-- jQuery -->
@@ -356,38 +385,7 @@ Marketing Partner PT Rayterton Indonesia
                                 <th>Actions</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            <?php if (count($contacts) > 0): ?>
-                                <?php foreach ($contacts as $i => $c): ?>
-                                    <?php $emailClean = normalize_email($c['email'] ?? ''); ?>
-                                    <tr>
-                                        <td><?= $i + 1 ?></td>
-                                        <td><?= htmlspecialchars($c['nama_perusahaan'] ?? '-') ?></td>
-                                        <td><?= htmlspecialchars($emailClean ?: '-') ?></td>
-                                        <td><?= htmlspecialchars($c['no_telp1'] ?? '-') ?></td>
-                                        <td><?= htmlspecialchars($c['kategori_perusahaan'] ?? '-') ?></td>
-                                        <td><?= htmlspecialchars($c['ditemukan_oleh'] ?? '-') ?></td>
-                                        <td><?= htmlspecialchars($c['status'] ?? '-') ?></td>
-                                        <td class="table-actions">
-                                            <?php if (($c['status'] ?? '') === 'input' && $emailClean): ?>
-                                                <a href="send_email.php?email=<?= urlencode($emailClean) ?>" class="btn email">Send Email</a>
-                                            <?php else: ?>
-                                                <button class="btn email" style="opacity:0.5; cursor:not-allowed;" disabled>Send Email</button>
-                                            <?php endif; ?>
-                                            <a href="javascript:void(0);" class="btn edit" onclick='openEditModal(<?= json_encode($c) ?>)'>Edit</a>
-                                            <a href="javascript:void(0);" class="btn details" onclick='toggleDetails(this, <?= json_encode($c) ?>)'>Details</a>
-                                            <button class="btn delete" onclick='confirmDelete("<?= htmlspecialchars(addslashes($c['email'] ?? '')) ?>")'>Delete</button>
 
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-
-                            <?php else: ?>
-                                <tr>
-                                    <td colspan="8" style="text-align:center;">No contacts available</td>
-                                </tr>
-                            <?php endif; ?>
-                        </tbody>
                     </table>
                 </div>
             </div>
@@ -434,27 +432,7 @@ Marketing Partner PT Rayterton Indonesia
                         </tr>
                     </thead>
                     <tbody>
-                        <?php
-                        // Urutkan supaya data dengan website/nama_perusahaan TIDAK kosong ditampilkan dulu
-                        usort($contacts, function ($a, $b) {
-                            $aEmpty = empty($a['nama_perusahaan']) && empty($a['website']);
-                            $bEmpty = empty($b['nama_perusahaan']) && empty($b['website']);
-                            return $aEmpty <=> $bEmpty; // yang kosong taruh di bawah
-                        });
-                        ?>
-                        <?php foreach ($contacts as $c): ?>
-                            <tr>
-                                <td><?= htmlspecialchars($c['nama_perusahaan'] ?? '-') ?></td>
-                                <td>
-                                    <a href="<?= htmlspecialchars($c['website'] ?? '#') ?>" target="_blank">
-                                        <?= htmlspecialchars($c['website'] ?? '-') ?>
-                                    </a>
-                                </td>
-                                <td><?= htmlspecialchars($c['kategori_perusahaan'] ?? '-') ?></td>
-                                <td><?= htmlspecialchars($c['tipe'] ?? '-') ?></td>
-                                <td><?= htmlspecialchars($c['kota'] ?? '-') ?></td>
-                            </tr>
-                        <?php endforeach; ?>
+
                     </tbody>
                 </table>
             </div>
@@ -574,71 +552,169 @@ Marketing Partner PT Rayterton Indonesia
             });
         }
 
-        $(document).ready(function() {
-            var table = $('#contactsTable').DataTable({
-                pageLength: 5,
-                lengthMenu: [5, 10, 25, 50],
-                ordering: false, // ⛔️ disable sorting di semua kolom
-                columnDefs: [{
-                    orderable: false,
-                    targets: "_all" // pastikan semua kolom tidak bisa di-sort
-                }]
-            });
+$(document).ready(function() {
+    // 1. All Contacts Table - Server-side
+    var contactsTable = $('#contactsTable').DataTable({
+        processing: true,
+        serverSide: true,
+        ajax: {
+            url: 'server_processing.php',
+            type: 'POST'
+        },
+        columns: [
+            { 
+                data: null,
+                name: 'DT_RowIndex',
+                orderable: false,
+                searchable: false,
+                render: function(data, type, row, meta) {
+                    return meta.row + meta.settings._iDisplayStart + 1;
+                }
+            },
+            { 
+                data: 'nama_perusahaan', 
+                name: 'nama_perusahaan',
+                render: function(data) {
+                    return data || '-';
+                }
+            },
+            { 
+                data: 'email', 
+                name: 'email',
+                render: function(data) {
+                    return data || '-';
+                }
+            },
+            { 
+                data: 'no_telp1', 
+                name: 'no_telp1',
+                render: function(data) {
+                    return data || '-';
+                }
+            },
+            { 
+                data: 'kategori_perusahaan', 
+                name: 'kategori_perusahaan',
+                render: function(data) {
+                    return data || '-';
+                }
+            },
+            { 
+                data: 'ditemukan_oleh', 
+                name: 'ditemukan_oleh',
+                render: function(data) {
+                    return data || '-';
+                }
+            },
+            { 
+                data: 'status', 
+                name: 'status',
+                render: function(data) {
+                    return data || '-';
+                }
+            },
+            { 
+                data: 'actions',
+                name: 'actions',
+                orderable: false,
+                searchable: false,
+                render: function(data, type, row) {
+                    let emailBtn = '';
+                    if (data.status === 'input' && data.email) {
+                        emailBtn = `<a href="send_email.php?email=${encodeURIComponent(data.email)}" class="btn email">Send Email</a>`;
+                    } else {
+                        emailBtn = `<button class="btn email" style="opacity:0.5; cursor:not-allowed;" disabled>Send Email</button>`;
+                    }
+                    
+                    return `
+                        ${emailBtn}
+                        <a href="javascript:void(0);" class="btn edit" onclick='openEditModal(${JSON.stringify(data.raw_data)})'>Edit</a>
+                        <a href="javascript:void(0);" class="btn details" onclick='toggleDetails(this, ${JSON.stringify(data.raw_data)})'>Details</a>
+                        <button class="btn delete" onclick='confirmDelete("${data.email.replace(/"/g, '\\"')}")'>Delete</button>
+                    `;
+                }
+            }
+        ],
+        pageLength: 20,
+        lengthMenu: [10, 20, 50, 100],
+        language: {
+            processing: "<div class='spinner-border' role='status'><span class='visually-hidden'>Loading...</span></div>",
+            search: "Search all:",
+            lengthMenu: "Show _MENU_ entries",
+            info: "Showing _START_ to _END_ of _TOTAL_ entries",
+            infoEmpty: "Showing 0 to 0 of 0 entries",
+            infoFiltered: "(filtered from _MAX_ total entries)",
+            zeroRecords: "No matching records found",
+            paginate: {
+                first: "First",
+                last: "Last",
+                next: "Next",
+                previous: "Previous"
+            }
+        }
+    });
 
-            var companyTable = $('#companyTable').DataTable({
-                pageLength: 5,
-                lengthMenu: [5, 10, 25, 50],
-                order: false
-            });
-
-            // 🔹 Sinkronisasi pagination
-            table.on('page.dt', function() {
-                var pageInfo = table.page.info();
-                companyTable.page(pageInfo.page).draw(false);
-            });
-
-            companyTable.on('page.dt', function() {
-                var pageInfo = companyTable.page.info();
-                table.page(pageInfo.page).draw(false);
-            });
-
-            // 🔹 Search by header click (khusus contactsTable)
-            $('#contactsTable thead th').each(function(index) {
-                var th = $(this);
-                if (th.text() === "#" || th.text() === "Actions") return;
-
-                th.css("cursor", "pointer");
-
-                th.on("click", function() {
-                    // Kalau input sudah ada, jangan bikin lagi
-                    if (th.find(".header-search").length > 0) return;
-
-                    // Simpan teks asli header
-                    var currentText = th.text();
-
-                    // Bungkus teks header + input container
-                    th.html('<div style="position:relative; display:flex; flex-direction:column; align-items:center;">' +
-                        '<span class="header-title">' + currentText + '</span>' +
-                        '<input type="text" class="header-search" placeholder="Search..." ' +
-                        'style="margin-top:4px; padding:3px 6px; font-size:12px; width:90%; border:1px solid #ccc; border-radius:4px;" />' +
-                        '</div>');
-
-                    var input = th.find(".header-search");
-                    input.focus();
-
-                    input.on("keyup change clear", function() {
-                        table.column(index).search(this.value).draw();
-                    });
-
-                    // Kalau blur dan kosong → hapus input, balikin teks header
-                    input.on("blur", function() {
-                        if (this.value === "") {
-                            th.html(currentText);
-                        }
-                    });
-                });
-            });
-        });
+    // 2. Company Directory Table - Server-side
+    var companyTable = $('#companyTable').DataTable({
+        processing: true,
+        serverSide: true,
+        ajax: {
+            url: 'company_processing.php',
+            type: 'POST'
+        },
+        columns: [
+            { 
+                data: 'nama_perusahaan', 
+                name: 'nama_perusahaan',
+                render: function(data) {
+                    return data || 'No Company Name';
+                }
+            },
+            { 
+                data: 'website', 
+                name: 'website',
+                render: function(data) {
+                    if (data && data !== '-' && data !== '#') {
+                        return `<a href="${data}" target="_blank" style="color: #2563eb; text-decoration: underline;">${data}</a>`;
+                    }
+                    return '-';
+                }
+            },
+            { 
+                data: 'kategori_perusahaan', 
+                name: 'kategori_perusahaan',
+                render: function(data) {
+                    return data || '-';
+                }
+            },
+            { 
+                data: 'tipe', 
+                name: 'tipe',
+                render: function(data) {
+                    return data || '-';
+                }
+            },
+            { 
+                data: 'kota', 
+                name: 'kota',
+                render: function(data) {
+                    return data || '-';
+                }
+            }
+        ],
+        pageLength: 10,
+        lengthMenu: [5, 10, 25, 50],
+        language: {
+            processing: "Loading...",
+            search: "Search companies:",
+            lengthMenu: "Show _MENU_ entries",
+            info: "Showing _START_ to _END_ of _TOTAL_ companies",
+            infoEmpty: "Showing 0 to 0 of 0 companies",
+            infoFiltered: "(filtered from _MAX_ total companies)",
+            zeroRecords: "No matching companies found"
+        }
+    });
+});
 
 
         let activeButton = null;
