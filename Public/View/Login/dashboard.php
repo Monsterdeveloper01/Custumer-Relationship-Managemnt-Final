@@ -42,6 +42,7 @@ $sql = "
         'presentation',
         'NDA process',
         'Gap analysis / requirement analysis',
+        'Customization',
         'SIT (System Integration Testing)',
         'UAT (User Acceptance Testing)',
         'Proposal',
@@ -95,6 +96,7 @@ $statusList = [
     "presentation" => "#8b5cf6",
     "NDA process" => "#0ea5e9",
     "Gap analysis / requirement analysis" => "#14b8a6",
+    "Customization" => "#a855f7",
     "SIT (System Integration Testing)" => "#e11d48",
     "UAT (User Acceptance Testing)" => "#7c3aed",
     "Proposal" => "#06b6d4",
@@ -114,6 +116,7 @@ $statuses = [
     'presentation',
     'NDA process',
     'Gap analysis / requirement analysis',
+    'Customization',
     'SIT (System Integration Testing)',
     'UAT (User Acceptance Testing)',
     'Proposal',
@@ -235,6 +238,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Partner Dashboard</title>
     <style>
         .input-base {
@@ -428,72 +432,144 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         .modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background: rgba(0, 0, 0, 0.6);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-}
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
 
-.modal-content {
-    background: white;
-    padding: 30px;
-    border-radius: 16px;
-    max-width: 500px;
-    width: 90%;
-    text-align: center;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-}
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        }
 
-.modal-icon {
-    font-size: 48px;
-    margin-bottom: 16px;
-}
+        .modal-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
 
-.modal-title {
-    font-size: 24px;
-    font-weight: bold;
-    color: #1e3a8a;
-    margin-bottom: 12px;
-}
+        .modal-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #1e3a8a;
+            margin-bottom: 12px;
+        }
 
-.modal-text {
-    font-size: 16px;
-    color: #4b5563;
-    margin-bottom: 24px;
-    line-height: 1.5;
-}
+        .modal-text {
+            font-size: 16px;
+            color: #4b5563;
+            margin-bottom: 24px;
+            line-height: 1.5;
+        }
 
-.modal-buttons {
-    display: flex;
-    gap: 12px;
-    justify-content: center;
-}
+        .modal-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
 
-.btn-primary {
-    background: linear-gradient(135deg, #2563eb, #1d4ed8);
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 8px;
-    font-weight: 600;
-    cursor: pointer;
-}
+        .btn-primary {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+        }
 
-.btn-secondary {
-    background: #f3f4f6;
-    color: #374151;
-    border: 1px solid #d1d5db;
-    padding: 10px 20px;
-    border-radius: 8px;
-    font-weight: 600;
-    cursor: pointer;
-}
+        .btn-secondary {
+            background: #f3f4f6;
+            color: #374151;
+            border: 1px solid #d1d5db;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        /* Supaya semua elemen ikut lebar layar */
+        body,
+        html {
+            max-width: 100%;
+            overflow-x: hidden;
+        }
+
+        /* Supaya card shrink di layar kecil */
+        .svc-card,
+        .welcome-card {
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        /* Grid fleksibel */
+        .svc-panel {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+
+        /* Responsive text */
+        h2,
+        h3,
+        h4,
+        p,
+        span {
+            word-wrap: break-word;
+        }
+
+        /* Button full width di HP */
+        @media (max-width: 640px) {
+
+            .btn,
+            button {
+                width: 100%;
+                margin-top: 0.5rem;
+            }
+
+            .welcome-card,
+            .svc-card {
+                padding: 1rem;
+                font-size: 0.9rem;
+            }
+        }
+
+        /* Ganti atau tambahkan ini di bagian CSS */
+        .hidden {
+            display: none !important;
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
     </style>
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -503,25 +579,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </head>
 
 <body>
-    <?php include("../Partials/Header.html"); ?>    
+    <?php include("../Partials/Header.html"); ?>
 
-            <!-- Welcome Modal untuk Marketing Baru -->
+    <!-- Welcome Modal untuk Marketing Baru -->
     <?php if ($showWelcomeModal): ?>
-    <div id="welcomeModal" class="modal-overlay">
-        <div class="modal-content">
-            <div class="modal-icon">🎉</div>
-            <h2 class="modal-title">Selamat Datang di CRM Dashboard!</h2>
-            <p class="modal-text">
-                Halo <strong><?= htmlspecialchars($partner['name'] ?? 'Partner') ?></strong>!<br>
-                Kami melihat ini adalah pertama kalinya Anda mengakses dashboard CRM.<br>
-                Mari mulai dengan menambahkan calon client pertama Anda.
-            </p>
-            <div class="modal-buttons">
-                <button class="btn-secondary" onclick="closeWelcomeModal()">Nanti Saja</button>
-                <button class="btn-primary" onclick="scrollToContactForm()">Tambah Client Pertama</button>
+        <div id="welcomeModal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-icon">🎉</div>
+                <h2 class="modal-title">Selamat Datang di CRM Dashboard!</h2>
+                <p class="modal-text">
+                    Halo <strong><?= htmlspecialchars($partner['name'] ?? 'Partner') ?></strong>!<br>
+                    Kami melihat ini adalah pertama kalinya Anda mengakses dashboard CRM.<br>
+                    Mari mulai dengan menambahkan calon client pertama Anda.
+                </p>
+                <div class="modal-buttons">
+                    <button class="btn-secondary" onclick="closeWelcomeModal()">Nanti Saja</button>
+                    <button class="btn-primary" onclick="scrollToContactForm()">Tambah Client Pertama</button>
+                </div>
             </div>
         </div>
-    </div>
     <?php endif; ?>
 
 
@@ -542,23 +618,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="card email-format">
             <div class="flex justify-between items-center mb-4 flex-col sm:flex-row">
                 <div class="welcome-text">
-                    <h2>
-                        Berikut contoh form isi email:
-                    </h2>
+                    <h2>Berikut contoh form isi email:</h2>
                 </div>
-                <p class="card-hint">
-                    Gunakan format ini saat mengirim email ke calon client.
-                </p>
+                <div class="flex items-center gap-2">
+                    <label for="langSelect" class="text-sm">Pilih Bahasa:</label>
+                    <select id="langSelect" class="border rounded p-1">
+                        <option value="id">Indonesia</option>
+                        <option value="en">English</option>
+                    </select>
+                </div>
             </div>
-            <textarea class="form-control w-full" rows="7" readonly style="width:100%; resize:none;">
-Kepada Yth Bapak/Ibu/Sdr [Nama Calon Client] 
-[Jabatan Calon Client] 
-[Nama PT Calon Client] 
+            <p class="card-hint mb-2">
+                Email format ini yang akan digunakan saat klik send email ke calon client
+            </p>
 
-Hormat kami,  
-[Nama Anda sebagai Marketing]  
-Marketing Partner PT Rayterton Indonesia
-    </textarea>
+            <!-- <textarea id="emailPreview"
+                class="form-control w-full"
+                rows="18"
+                readonly
+                style="width:100%; resize:none;">
+  </textarea> -->
+            <div id="emailPreview"
+                class="form-control w-full over"
+                style="width:100%; 
+            max-height: 300px;        /* Batas tinggi maksimal */
+            min-height: 200px;        /* Tinggi minimal (opsional) */
+            padding: 10px; 
+            border: 1px solid #ced4da; 
+            border-radius: 0.375rem; 
+            background-color: #f8f9fa; 
+            white-space: pre-wrap; 
+            font-family: monospace; 
+            overflow: auto;           /* Aktifkan scroll jika konten melebihi */
+            resize: vertical;">
+            </div>
         </div>
 
 
@@ -609,12 +702,15 @@ Marketing Partner PT Rayterton Indonesia
                                 <td><?= htmlspecialchars($c['no_telp1'] ?? '-') ?></td>
                                 <td><?= htmlspecialchars($c['kategori_perusahaan'] ?? '-') ?></td>
                                 <td><?= htmlspecialchars($c['status'] ?? '-') ?></td>
+                                <!-- Di bagian render actions di DataTables -->
                                 <td class="table-actions">
                                     <?php if (($c['status'] ?? '') === 'input' && $emailClean && empty($isPartner)): ?>
                                         <button type="button" class="btn email" onclick="previewEmail('<?= $emailClean ?>')">Send Email</button>
                                     <?php else: ?>
                                         <button class="btn email" style="opacity:0.5; cursor:not-allowed;" disabled>Send Email</button>
                                     <?php endif; ?>
+                                    <!-- TAMBAH BUTTON EDIT -->
+                                    <a href="javascript:void(0);" class="btn edit" onclick='openEditModal(<?= json_encode($c) ?>)'>Edit</a>
                                     <a href="javascript:void(0);" class="btn details" onclick='toggleDetails(this, <?= json_encode($c) ?>)'>Details</a>
                                 </td>
                             </tr>
@@ -751,46 +847,171 @@ Marketing Partner PT Rayterton Indonesia
         </div>
 
         <!-- Edit Modal -->
-        <div id="editModal" class="modal">
-            <div class="modal-content">
-                <span class="close" onclick="closeModal()">&times;</span>
-                <h2>Edit Contact</h2>
-                <!-- Panduan -->
-                <p class="card-hint">
-                    Gunakan form ini untuk memperbarui data kontak. Pastikan email benar karena jadi acuan utama.
-                </p>
-                <form id="editForm" method="post" action="edit_contact.php">
-                    <input type="hidden" name="company_email" id="edit_company_email">
-                    <label for="edit_name_person">Company Name:</label>
-                    <input type="text" name="company_name" id="edit_company_name" required>
-                    <label for="edit_person_email">Email:</label>
-                    <input type="email" name="person_email" id="edit_person_email" required>
-                    <label for="edit_phone_number">Phone:</label>
-                    <input type="text" name="phone_number" id="edit_phone_number" required>
-                    <label for="edit_status">Status:</label>
-                    <select name="status" id="edit_status" required>
-                        <option value="input">Input</option>
-                        <option value="emailed">Emailed</option>
-                        <option value="contacted">Contacted</option>
-                        <option value="presentation">Presentation</option>
-                        <option value="NDA process">NDA process</option>
-                        <option value="Gap analysis / requirement analysis">Gap analysis / requirement analysis</option>
-                        <option value="SIT (System Integration Testing)">SIT (System Integration Testing)</option>
-                        <option value="UAT (User Acceptance Testing)">UAT (User Acceptance Testing)</option>
-                        <option value="Proposal">Proposal</option>
-                        <option value="Negotiation">Negotiation</option>
-                        <option value="Deal / Closed">Deal / Closed</option>
-                        <option value="Failed / Tidak Lanjut">Failed / Tidak Lanjut</option>
-                        <option value="Postpone">Postpone</option>
-                    </select>
-                    <button type="submit" class="btn edit">Save Changes</button>
+        <div id="editModal" class="modal fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+            <div class="modal-content bg-white rounded-lg shadow-xl max-w-2xl mx-auto">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-semibold">Edit Contact</h2>
+                    <span class="close text-2xl cursor-pointer" onclick="closeEditModal()">&times;</span>
+                </div>
+
+                <div class="mb-4 p-4 bg-yellow-50 rounded-lg">
+                    <p class="text-sm text-yellow-800">
+                        <strong>Note:</strong> Status kontak tidak dapat diubah manual.
+                        Status akan berubah otomatis berdasarkan progress deal dengan client.
+                    </p>
+                    <p class="text-sm text-yellow-800 mt-1">
+                        <strong>Current Status:</strong>
+                        <span id="currentStatusDisplay" class="font-semibold"></span>
+                    </p>
+                </div>
+
+                <form id="editForm" method="post" action="edit_contact.php" class="space-y-4">
+                    <input type="hidden" name="email" id="edit_email">
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Company Information -->
+                        <div class="md:col-span-2">
+                            <h3 class="text-lg font-medium mb-3 text-gray-700">Company Information</h3>
+                        </div>
+
+                        <div>
+                            <label for="edit_nama_perusahaan" class="block mb-2 font-medium">Company Name *</label>
+                            <input type="text" name="nama_perusahaan" id="edit_nama_perusahaan"
+                                class="w-full border rounded p-3" required>
+                        </div>
+
+                        <div>
+                            <label for="edit_kategori_perusahaan" class="block mb-2 font-medium">Company Category</label>
+                            <select name="kategori_perusahaan" id="edit_kategori_perusahaan"
+                                class="w-full border rounded p-3">
+                                <option value="">-- Select Category --</option>
+                                <option value="Banking">Banking</option>
+                                <option value="Multifinance">Multifinance</option>
+                                <option value="Insurance">Insurance</option>
+                                <option value="Manufacturing">Manufacturing</option>
+                                <option value="Retail">Retail</option>
+                                <option value="Distribution">Distribution</option>
+                                <option value="Oil & Gas / Energy">Oil & Gas / Energy</option>
+                                <option value="Government and Ministry">Government and Ministry</option>
+                                <option value="Koperasi & UMKM">Koperasi & UMKM</option>
+                                <option value="Logistics and Transportation">Logistics and Transportation</option>
+                                <option value="Hospital and Clinics">Hospital and Clinics</option>
+                                <option value="Education and Training">Education and Training</option>
+                                <option value="Hotels, Restaurant, and Hospitality">Hotels, Restaurant, and Hospitality</option>
+                                <option value="Tour and Travel">Tour and Travel</option>
+                                <option value="NGO, LSM, and International Organizations">NGO, LSM, and International Organizations</option>
+                                <option value="Property and Real Estate">Property and Real Estate</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label for="edit_tipe" class="block mb-2 font-medium">Company Type *</label>
+                            <select name="tipe" id="edit_tipe" class="w-full border rounded p-3" required>
+                                <option value="">-- Select Type --</option>
+                                <option value="Swasta">Swasta</option>
+                                <option value="Bumn">Bumn</option>
+                                <option value="Bumd">Bumd</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label for="edit_website" class="block mb-2 font-medium">Website</label>
+                            <input type="url" name="website" id="edit_website"
+                                class="w-full border rounded p-3" placeholder="https://...">
+                        </div>
+
+                        <!-- Contact Person Information -->
+                        <div class="md:col-span-2 mt-4">
+                            <h3 class="text-lg font-medium mb-3 text-gray-700">Contact Person Information</h3>
+                        </div>
+
+                        <div>
+                            <label for="edit_nama" class="block mb-2 font-medium">Contact Name</label>
+                            <input type="text" name="nama" id="edit_nama"
+                                class="w-full border rounded p-3">
+                        </div>
+
+                        <div>
+                            <label for="edit_jabatan_lengkap" class="block mb-2 font-medium">Position Title</label>
+                            <input type="text" name="jabatan_lengkap" id="edit_jabatan_lengkap"
+                                class="w-full border rounded p-3">
+                        </div>
+
+                        <div>
+                            <label for="edit_kategori_jabatan" class="block mb-2 font-medium">Position Category</label>
+                            <input type="text" name="kategori_jabatan" id="edit_kategori_jabatan"
+                                class="w-full border rounded p-3">
+                        </div>
+
+                        <!-- 🔹 New Email Field -->
+                        <div>
+                            <label for="edit_new_email" class="block mb-2 font-medium">Email *</label>
+                            <input type="email" name="new_email" id="edit_new_email"
+                                class="w-full border rounded p-3" required>
+                        </div>
+
+                        <div>
+                            <label for="edit_email_lain" class="block mb-2 font-medium">Secondary Email</label>
+                            <input type="email" name="email_lain" id="edit_email_lain"
+                                class="w-full border rounded p-3">
+                        </div>
+
+                        <!-- Contact Details -->
+                        <div class="md:col-span-2 mt-4">
+                            <h3 class="text-lg font-medium mb-3 text-gray-700">Contact Details</h3>
+                        </div>
+
+                        <div>
+                            <label for="edit_no_telp1" class="block mb-2 font-medium">Primary Phone *</label>
+                            <input type="text" name="no_telp1" id="edit_no_telp1"
+                                class="w-full border rounded p-3" required>
+                        </div>
+
+                        <div>
+                            <label for="edit_no_telp2" class="block mb-2 font-medium">Alternate Phone</label>
+                            <input type="text" name="no_telp2" id="edit_no_telp2"
+                                class="w-full border rounded p-3">
+                        </div>
+
+                        <!-- Address Information -->
+                        <div class="md:col-span-2">
+                            <label for="edit_alamat" class="block mb-2 font-medium">Address</label>
+                            <textarea name="alamat" id="edit_alamat"
+                                class="w-full border rounded p-3" rows="3"></textarea>
+                        </div>
+
+                        <div>
+                            <label for="edit_kota" class="block mb-2 font-medium">City</label>
+                            <input type="text" name="kota" id="edit_kota"
+                                class="w-full border rounded p-3">
+                        </div>
+                    </div>
+
+                    <div class="flex gap-3 pt-4 border-t">
+                        <button type="button" onclick="closeEditModal()"
+                            class="flex-1 bg-gray-300 text-gray-700 py-3 px-4 rounded hover:bg-gray-400 transition">
+                            Cancel
+                        </button>
+                        <button type="submit"
+                            class="flex-1 bg-green-600 text-white py-3 px-4 rounded hover:bg-green-700 transition">
+                            Save Changes
+                        </button>
+                    </div>
                 </form>
+
             </div>
         </div>
     </div>
 
     <script>
-                // Fungsi untuk modal welcome
+
+        function linkify(text) {
+                // Regex untuk mencocokkan URL (sederhana tapi efektif)
+                const urlRegex = /(https?:\/\/[^\s<>"{}|\\^`\[\]]+)/gi;
+                return text.replace(urlRegex, url => `<a href="${url}" target="_blank" style="color:#2563eb; text-decoration:underline;">${url}</a>`);
+            }
+            
+        // Fungsi untuk modal welcome
         function closeWelcomeModal() {
             const modal = document.getElementById('welcomeModal');
             if (modal) {
@@ -921,18 +1142,114 @@ Marketing Partner PT Rayterton Indonesia
 
         }
 
+        // Function untuk buka modal edit
         function openEditModal(contact) {
-            document.getElementById("edit_person_email").value = contact.email;
-            document.getElementById("edit_company_name").value = contact.nama_perusahaan;
-            document.getElementById("edit_phone_number").value = contact.no_telp1;
-            document.getElementById("edit_status").value = contact.status;
-            document.getElementById("editModal").style.display = "block";
+            document.getElementById('edit_email').value = contact.email; // hidden input
+            document.getElementById('edit_nama_perusahaan').value = contact.nama_perusahaan;
+            document.getElementById('edit_kategori_perusahaan').value = contact.kategori_perusahaan;
+            document.getElementById('edit_tipe').value = contact.tipe;
+            document.getElementById('edit_website').value = contact.website;
+            document.getElementById('edit_nama').value = contact.nama;
+            document.getElementById('edit_jabatan_lengkap').value = contact.jabatan_lengkap;
+            document.getElementById('edit_kategori_jabatan').value = contact.kategori_jabatan;
+            document.getElementById('edit_email_lain').value = contact.email_lain;
+            document.getElementById('edit_no_telp1').value = contact.no_telp1;
+            document.getElementById('edit_no_telp2').value = contact.no_telp2;
+            document.getElementById('edit_alamat').value = contact.alamat;
+            document.getElementById('edit_kota').value = contact.kota;
+
+            // 👇 Tambahin baris ini supaya input new_email auto isi current email
+            document.getElementById('edit_new_email').value = contact.email;
+
+            // buka modal
+            document.getElementById('editModal').classList.remove('hidden');
         }
 
 
-        function closeModal() {
-            document.getElementById("editModal").style.display = "none";
+        // Function untuk tutup modal edit
+        function closeEditModal() {
+            document.getElementById("editModal").classList.add("hidden");
         }
+
+        // Handle form submission untuk edit
+        document.getElementById('editForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const formData = new FormData(this);
+
+            // Validasi client-side
+            const companyName = document.getElementById('edit_nama_perusahaan').value.trim();
+            const phone = document.getElementById('edit_no_telp1').value.trim();
+            const companyType = document.getElementById('edit_tipe').value;
+
+            if (!companyName) {
+                Swal.fire('Error!', 'Company Name is required.', 'error');
+                return;
+            }
+
+            if (!phone) {
+                Swal.fire('Error!', 'Primary Phone is required.', 'error');
+                return;
+            }
+
+            if (!companyType) {
+                Swal.fire('Error!', 'Company Type is required.', 'error');
+                return;
+            }
+
+            // Tampilkan loading
+            Swal.fire({
+                title: 'Updating...',
+                text: 'Please wait',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            // Kirim data ke server
+            fetch('edit_contact.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    Swal.close();
+                    if (data.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success!',
+                            text: 'Contact updated successfully.',
+                            confirmButtonText: 'OK'
+                        }).then(() => {
+                            closeEditModal();
+                            // Refresh halaman untuk melihat perubahan
+                            location.reload();
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error!',
+                            text: data.error || 'Failed to update contact.',
+                            confirmButtonText: 'OK'
+                        });
+                    }
+                })
+                .catch(error => {
+                    Swal.close();
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error!',
+                        text: 'System error occurred: ' + error.message,
+                        confirmButtonText: 'OK'
+                    });
+                });
+        });
 
         function backToTop() {
             // Scroll ke atas dengan smooth
@@ -1060,6 +1377,95 @@ Marketing Partner PT Rayterton Indonesia
                 modal.classList.add("hidden"); // sembunyikan modal
             }
         }
+
+        const emailTemplates = {
+            id: `Kepada Yth. Bapak/Ibu [Nama Calon Client]
+[Jabatan Calon Client]
+[Nama PT Calon Client]
+
+Perkenalkan, saya [Nama Anda sebagai Marketing] dari PT Rayterton Indonesia.
+
+Kami menawarkan solusi software IT dan bisnis dengan prinsip 100% Tanpa Risiko. 
+Software kami bersifat bestfit yang sepenuhnya bisa disesuaikan dengan proses dan kebutuhan bisnis Anda. 
+Tim kami dapat melakukan kustomisasi tanpa batas hingga benar-benar sesuai, semua tanpa biaya atau perjanjian di muka. 
+Proposal baru akan dikirim setelah software kami lolos uji (User Acceptance Testing / UAT) dan siap untuk go live di perusahaan Anda. 100% Risk Free. 
+Tersedia untuk berbagai industri seperti Banking, Multifinance, Insurance, Manufacturing, Retail, Distribution, Government/Ministry/BUMN/BUMD, 
+Oil and Gas, Transportation & Logistics, Hotels and Hospitality, Travel, Property, dan lainnya.
+
+https://www.rayterton.com
+
+Kami juga menyediakan jasa IT Consulting dan Management Consulting 100% Risk Free. 
+Dokumen konsultasi di awal (sebelum eksekusi) dapat Anda peroleh tanpa biaya di muka dan tanpa perjanjian terlebih dahulu.
+
+https://www.rayterton.com/it-consulting.php
+https://www.rayterton.com/management-consulting.php
+
+Selain itu, kami menyediakan Rayterton Academy, program training pelatihan praktis IT, Business and Finance, Entrepreneurship, Leadership, serta Management dan Career, 
+yang membantu meningkatkan kompetensi tim Anda dalam lingkungan bisnis digital yang terus berkembang. 
+Program ini juga membantu mempercepat perkembangan karir Anda dan rekan-rekan Anda.
+
+https://www.raytertonacademy.com
+
+Sebagai apresiasi, kami berikan kode promo berikut:
+Kode Promo: [Kode Promo]
+Gunakan kode ini untuk mendapatkan penawaran khusus dari kami.
+
+Hormat kami,
+[Nama Anda sebagai Marketing]
+Marketing Consultant/Partner
+PT Rayterton Indonesia`,
+
+            en: `Dear Mr./Ms. [Client Name]
+[Client Position]
+[Client Company Name]
+
+My name is [Your Name as Marketing] from PT Rayterton Indonesia.
+
+We provide software solutions, IT consulting, and management consulting under a 100% Risk-Free principle. 
+Our best-fit software can be fully customized to your business processes and requirements. 
+Unlimited customization until it perfectly fits—no upfront cost or agreement. 
+A proposal will only be sent after our software passes User Acceptance Testing (UAT) and is ready to go live. 
+This service is available for various industries such as Banking, Multifinance, Insurance, Manufacturing, Retail, Distribution, Government/Ministry/State-Owned Enterprises, 
+Oil and Gas, Transportation & Logistics, Hotels and Hospitality, Travel, Property, and more.
+
+https://www.rayterton.com
+
+We also provide IT Consulting and Management Consulting 100% Risk Free. 
+Initial consulting documents (before execution) are available without any upfront cost or agreement.
+
+https://www.rayterton.com/it-consulting.php
+https://www.rayterton.com/management-consulting.php
+
+Additionally, Rayterton Academy offers practical training in IT, Business and Finance, Entrepreneurship, Leadership, as well as Management and Career development, 
+helping to enhance your team's competence in today's evolving digital business environment. 
+This program also accelerates career growth for you and your colleagues.
+
+https://www.raytertonacademy.com
+
+Promo Code: [Promo Code]
+Use this code to access our special offer.
+
+Best regards,
+[Your Name as Marketing]
+Marketing Consultant/Partner
+PT Rayterton Indonesia`
+        };
+
+        const langSelect = document.getElementById("langSelect");
+        const emailPreviewDiv = document.getElementById("emailPreview");
+
+        function updateEmailPreview(lang) {
+            const template = emailTemplates[lang] || emailTemplates['id'];
+            emailPreviewDiv.innerHTML = linkify(template);
+        }
+
+        // Set awal ke bahasa Indonesia
+        updateEmailPreview('id');
+
+        // Saat ganti bahasa
+        langSelect.addEventListener("change", (e) => {
+            updateEmailPreview(e.target.value);
+        });
     </script>
 </body>
 

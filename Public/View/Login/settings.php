@@ -1,6 +1,6 @@
 <?php
-require_once __DIR__ . '/../Model/db.php';
-require_once __DIR__ . '/../Controller/functions.php';
+require_once __DIR__ . '/../../Model/db.php';
+require_once __DIR__ . '/../../Controller/functions.php';
 require_login();
 
 $user = $_SESSION['user']; // dari login
@@ -19,7 +19,7 @@ $user = $_SESSION['user']; // dari login
 <body class="bg-gray-50 min-h-screen font-sans" x-data="{ sidebarOpen: false }">
 
     <!-- Header -->
-    <?php include("./Partials"); ?>
+    <?php include("../Partials/Header.html"); ?>
 
     <!-- Main Content -->
     <main class="max-w-6xl mx-auto px-4 py-8">
