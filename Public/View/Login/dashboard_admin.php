@@ -1,5 +1,11 @@
 <?php
 session_start();
+if (!empty($_SESSION['bulk_msg'])): ?>
+    <div class="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-6">
+        <?= htmlspecialchars($_SESSION['bulk_msg']) ?>
+    </div>
+    <?php unset($_SESSION['bulk_msg']); ?>
+<?php endif;
 require '../../Model/db.php';
 
 // Kalau belum login, tendang ke login
@@ -558,7 +564,22 @@ $typeData = $typeStmt->fetchAll(PDO::FETCH_ASSOC);
             </div>
         </div>
 
-
+        <!-- Bulk Upload CSV -->
+        <div class="card mt-6">
+            <h3 class="text-lg font-semibold mb-3">Upload Kontak Massal (CSV)</h3>
+            <form method="POST" enctype="multipart/form-data" action="bulk_upload.php">
+                <input type="file" name="csv_file" accept=".csv" required
+                    class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+                <button type="submit" class="mt-3 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
+                    Upload CSV
+                </button>
+            </form>
+            <div class="mt-2 text-sm text-gray-600">
+                <a href="download_template.php" class="text-blue-600 hover:underline font-medium">
+                    📥 Download Template (CSV)
+                </a>
+            </div>
+        </div>
 
         <div class="card info-card partner-list">
             <div class="flex justify-between items-start mb-4">
@@ -1600,6 +1621,55 @@ PT Rayterton Indonesia`
                 }
             });
         </script>
+            <?php if (!empty($_SESSION['bulk_upload_result'])): ?>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const result = <?= json_encode($_SESSION['bulk_upload_result']) ?>;
+                deleteSessionBulkResult(); // hapus session setelah tampil
+
+                if (result.error) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Upload Gagal',
+                        text: result.error,
+                        confirmButtonText: 'OK'
+                    });
+                } else {
+                    const success = result.success || 0;
+                    const failed = result.failed || 0;
+                    let title = 'Upload Selesai!';
+                    let html = `<div style="text-align:left;">
+            <p><strong>Berhasil:</strong> ${success} kontak</p>
+            <p><strong>Gagal:</strong> ${failed} kontak</p>
+        </div>`;
+                    let icon = 'success';
+
+                    if (success === 0 && failed > 0) {
+                        icon = 'error';
+                        title = 'Upload Gagal!';
+                    } else if (success > 0 && failed > 0) {
+                        icon = 'warning';
+                        title = 'Sebagian Berhasil';
+                    }
+
+                    Swal.fire({
+                        icon: icon,
+                        title: title,
+                        html: html,
+                        confirmButtonText: 'OK'
+                    });
+                }
+            });
+
+            // Fungsi untuk hapus session via AJAX (opsional) atau cukup unset di PHP
+            function deleteSessionBulkResult() {
+                fetch('clear_bulk_session.php', {
+                    method: 'POST'
+                });
+            }
+        </script>
+        <?php unset($_SESSION['bulk_upload_result']); ?>
+    <?php endif; ?>
 </body>
 
 </html>
