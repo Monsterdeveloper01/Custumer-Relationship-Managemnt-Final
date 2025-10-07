@@ -145,59 +145,38 @@ $marketingStmt = $pdo->query("
 ");
 $marketingData = $marketingStmt->fetchAll(PDO::FETCH_ASSOC);
 
-// 🔹 AMBIL DATA KATEGORI PERUSAHAAN PER PARTNER
+// 🔹 AMBIL DATA KATEGORI PERUSAHAAN (dengan filter partner)
 $categoryStmt = $pdo->query("
     SELECT 
-        COALESCE(u.name, pi.nama_lengkap, pin.nama_institusi) AS display_name,
-        cat.ditemukan_oleh AS partner_id,
-        SUM(cat.total_per_category) AS total_category,
-        GROUP_CONCAT(CONCAT(cat.kategori_perusahaan, ' (', cat.total_per_category, ')') SEPARATOR ', ') AS category_details
-    FROM (
-        SELECT 
-            c.ditemukan_oleh,
-            c.kategori_perusahaan,
-            COUNT(c.email) AS total_per_category
-        FROM crm_contacts_staging c
-        WHERE c.ditemukan_oleh IS NOT NULL
-        GROUP BY c.ditemukan_oleh, c.kategori_perusahaan
-    ) cat
-    LEFT JOIN users u 
-        ON u.marketing_id = cat.ditemukan_oleh COLLATE utf8mb4_general_ci
-    LEFT JOIN partner_individual pi 
-        ON pi.promo_code = cat.ditemukan_oleh COLLATE utf8mb4_general_ci
-    LEFT JOIN partner_institution pin 
-        ON pin.kode_institusi = cat.ditemukan_oleh COLLATE utf8mb4_general_ci
-    GROUP BY cat.ditemukan_oleh
-    ORDER BY total_category DESC
+        COALESCE(NULLIF(kategori_perusahaan, ''), 'Unknown') AS category,
+        COUNT(*) AS total
+    FROM crm_contacts_staging 
+    WHERE ditemukan_oleh IS NOT NULL
+    GROUP BY kategori_perusahaan
+    ORDER BY total DESC
 ");
-$categoryData = $categoryStmt->fetchAll(PDO::FETCH_ASSOC);
+$categoryDataAll = $categoryStmt->fetchAll(PDO::FETCH_ASSOC);
 
-// 🔹 AMBIL DATA TIPE PERUSAHAAN PER PARTNER
+// 🔹 AMBIL DATA TIPE PERUSAHAAN (dengan filter partner)
 $typeStmt = $pdo->query("
     SELECT 
-        COALESCE(u.name, pi.nama_lengkap, pin.nama_institusi) AS display_name,
-        t.ditemukan_oleh AS partner_id,
-        SUM(t.total_per_type) AS total_type,
-        GROUP_CONCAT(CONCAT(t.tipe, ' (', t.total_per_type, ')') SEPARATOR ', ') AS type_details
-    FROM (
-        SELECT 
-            c.ditemukan_oleh,
-            c.tipe,
-            COUNT(c.email) AS total_per_type
-        FROM crm_contacts_staging c
-        WHERE c.ditemukan_oleh IS NOT NULL
-        GROUP BY c.ditemukan_oleh, c.tipe
-    ) t
-    LEFT JOIN users u 
-        ON u.marketing_id = t.ditemukan_oleh COLLATE utf8mb4_general_ci
-    LEFT JOIN partner_individual pi 
-        ON pi.promo_code = t.ditemukan_oleh COLLATE utf8mb4_general_ci
-    LEFT JOIN partner_institution pin 
-        ON pin.kode_institusi = t.ditemukan_oleh COLLATE utf8mb4_general_ci
-    GROUP BY t.ditemukan_oleh
-    ORDER BY total_type DESC
+        COALESCE(NULLIF(tipe, ''), 'Unknown') AS type,
+        COUNT(*) AS total
+    FROM crm_contacts_staging 
+    WHERE ditemukan_oleh IS NOT NULL
+    GROUP BY tipe
+    ORDER BY total DESC
 ");
-$typeData = $typeStmt->fetchAll(PDO::FETCH_ASSOC);
+$typeDataAll = $typeStmt->fetchAll(PDO::FETCH_ASSOC);
+
+// 🔹 AMBIL DAFTAR PARTNER UNTUK FILTER
+$partnerStmt = $pdo->query("
+    SELECT DISTINCT ditemukan_oleh 
+    FROM crm_contacts_staging 
+    WHERE ditemukan_oleh IS NOT NULL AND ditemukan_oleh != ''
+    ORDER BY ditemukan_oleh
+");
+$partners = $partnerStmt->fetchAll(PDO::FETCH_COLUMN);
 
 
 ?>
@@ -567,6 +546,16 @@ $typeData = $typeStmt->fetchAll(PDO::FETCH_ASSOC);
         <!-- Bulk Upload CSV -->
         <div class="card mt-6">
             <h3 class="text-lg font-semibold mb-3">Upload Kontak Massal (CSV)</h3>
+            <div class="card mb-4">
+                <h3 class="text-lg font-semibold mb-3">📋 Panduan Upload CSV</h3>
+                <ul class="list-disc pl-5 text-sm text-gray-700 space-y-1">
+                    <li><strong>Kolom wajib:</strong> <code>nama_perusahaan</code>, <code>email</code>, <code>no_telp1</code>, <code>tipe</code></li>
+                    <li><strong>Tipe perusahaan:</strong> hanya boleh <code>Swasta</code>, <code>Bumn</code>, atau <code>Bumd</code></li>
+                    <li><strong>Kategori perusahaan:</strong> pilih dari daftar yang tersedia di template</li>
+                    <li><strong>Hapus baris contoh</strong> sebelum upload</li>
+                    <li>Simpan file sebagai <strong>CSV UTF-8</strong></li>
+                </ul>
+            </div>
             <form method="POST" enctype="multipart/form-data" action="bulk_upload.php">
                 <input type="file" name="csv_file" accept=".csv" required
                     class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
@@ -675,46 +664,76 @@ $typeData = $typeStmt->fetchAll(PDO::FETCH_ASSOC);
             <?php endif; ?>
         </div>
 
+
         <!-- Company Category Performance -->
         <div class="card stats-card" id="categoryCard">
-            <h2>Company Category Overview</h2>
-            <p class="card-hint">
-                Jumlah CRM berdasarkan kategori perusahaan, ditampilkan per marketing/partner.
-            </p>
+            <div class="flex justify-between items-center mb-4 flex-col sm:flex-row">
+                <div>
+                    <h2>Company Category Overview</h2>
+                    <p class="card-hint">
+                        Jumlah CRM berdasarkan kategori perusahaan, ditampilkan per marketing/partner.
+                    </p>
+                </div>
+                <div class="flex items-center gap-2 mt-2 sm:mt-0">
+                    <label for="categoryPartnerFilter" class="text-sm font-medium">Filter Partner:</label>
+                    <select id="categoryPartnerFilter" class="border rounded p-1 text-sm">
+                        <option value="all">All Partners</option>
+                        <?php foreach ($partners as $partnerCode): ?>
+                            <option value="<?= htmlspecialchars($partnerCode) ?>">
+                                <?= htmlspecialchars($partnerCode) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+
+            </div>
             <div class="overflow-x-auto">
                 <div class="chart-container" style="width: max-content; min-width: 100%; height: 250px; padding: 10px;">
                     <canvas id="categoryChart"></canvas>
                 </div>
             </div>
-            <?php if (count($categoryData) > 5): ?>
-                <div class="text-center mt-4">
-                    <button id="toggleCategoryChart" class="btn-add-contact" style="padding:8px 16px; font-size:13px;">
-                        <span class="icon">🔽</span>
-                        <span id="toggleCategoryText">Show More</span>
-                    </button>
-                </div>
-            <?php endif; ?>
+            <div class="text-center mt-4">
+                <button id="toggleCategoryChart" class="btn-add-contact" style="padding:8px 16px; font-size:13px;">
+                    <span class="icon">🔽</span>
+                    <span id="toggleCategoryText">Show More Categories</span>
+                </button>
+            </div>
+
         </div>
 
         <!-- Company Type Performance -->
         <div class="card stats-card" id="typeCard">
-            <h2>Company Type Overview</h2>
-            <p class="card-hint">
-                Jumlah CRM berdasarkan tipe perusahaan, ditampilkan per marketing/partner.
-            </p>
+            <div class="flex justify-between items-center mb-4 flex-col sm:flex-row">
+                <div>
+                    <h2>Company Type Overview</h2>
+                    <p class="card-hint">
+                        Jumlah CRM berdasarkan tipe perusahaan, ditampilkan per marketing/partner.
+                    </p>
+                </div>
+                <div class="flex items-center gap-2 mt-2 sm:mt-0">
+                    <label for="typePartnerFilter" class="text-sm font-medium">Filter Partner:</label>
+                    <select id="typePartnerFilter" class="border rounded p-1 text-sm">
+                        <option value="all">All Partners</option>
+                        <?php foreach ($partners as $partnerCode): ?>
+                            <option value="<?= htmlspecialchars($partnerCode) ?>">
+                                <?= htmlspecialchars($partnerCode) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+            </div>
             <div class="overflow-x-auto">
                 <div class="chart-container" style="width: max-content; min-width: 100%; height: 250px; padding: 10px;">
                     <canvas id="typeChart"></canvas>
                 </div>
             </div>
-            <?php if (count($typeData) > 5): ?>
-                <div class="text-center mt-4">
-                    <button id="toggleTypeChart" class="btn-add-contact" style="padding:8px 16px; font-size:13px;">
-                        <span class="icon">🔽</span>
-                        <span id="toggleTypeText">Show More</span>
-                    </button>
-                </div>
-            <?php endif; ?>
+            <div class="text-center mt-4">
+                <button id="toggleTypeChart" class="btn-add-contact" style="padding:8px 16px; font-size:13px;">
+                    <span class="icon">🔽</span>
+                    <span id="toggleTypeText">Show More Types</span>
+                </button>
+            </div>
+
         </div>
 
 
@@ -1469,35 +1488,42 @@ PT Rayterton Indonesia`
                 }
             });
 
-            // Data dari PHP
-            const categoryData = <?= json_encode($categoryData) ?>;
-            const typeData = <?= json_encode($typeData) ?>;
+            // Data awal dari PHP (untuk All Partners)
+            const categoryDataAll = <?= json_encode($categoryDataAll) ?>;
+            const typeDataAll = <?= json_encode($typeDataAll) ?>;
 
             // ================== CATEGORY CHART ==================
+            let currentCategoryPartner = 'all';
+            let categoryChartInstance = null;
             let isCategoryExpanded = false;
+            const CATEGORY_LIMIT = 8; // Tampilkan 8 kategori pertama, sisanya di show more
 
-            function renderCategoryChart(showAll = false) {
-                const displayData = showAll ? categoryData : categoryData.slice(0, 5);
+            function renderCategoryChart(data, partner = 'all', showAll = false) {
                 const ctx = document.getElementById('categoryChart').getContext('2d');
 
-                if (window.categoryChartInstance) window.categoryChartInstance.destroy();
+                if (categoryChartInstance) categoryChartInstance.destroy();
 
-                const labels = displayData.map(d => {
-                    const name = d.display_name?.trim();
-                    const displayName = name && name !== 'null' ? name : d.partner_id || 'Unknown';
-                    const promoCode = d.partner_id || '-';
-                    return `${displayName} - ${promoCode}`;
-                });
+                // Filter data berdasarkan showAll
+                let displayData = data;
+                if (!showAll && data.length > CATEGORY_LIMIT) {
+                    displayData = data.slice(0, CATEGORY_LIMIT);
+                }
 
-                window.categoryChartInstance = new Chart(ctx, {
+                const labels = displayData.map(d => d.category);
+                const chartData = displayData.map(d => d.total);
+
+                // Generate colors
+                const backgroundColors = generateColors(displayData.length, '#10b981', '#059669');
+
+                categoryChartInstance = new Chart(ctx, {
                     type: 'bar',
                     data: {
                         labels: labels,
                         datasets: [{
-                            label: 'Company Category',
-                            data: displayData.map(d => d.total_category),
-                            backgroundColor: '#10b981',
-                            borderColor: '#059669',
+                            label: 'Jumlah Perusahaan',
+                            data: chartData,
+                            backgroundColor: backgroundColors,
+                            borderColor: '#ffffff',
                             borderWidth: 1
                         }]
                     },
@@ -1509,147 +1535,382 @@ PT Rayterton Indonesia`
                             legend: {
                                 display: false
                             },
+                            title: {
+                                display: true,
+                                text: partner === 'all' ?
+                                    `Distribusi Kategori Perusahaan (All Partners) - ${displayData.length} categories` : `Distribusi Kategori - ${partner} - ${displayData.length} categories`,
+                                font: {
+                                    size: 14,
+                                    weight: 'bold'
+                                }
+                            },
                             tooltip: {
                                 callbacks: {
                                     label: function(context) {
-                                        const detail = displayData[context.dataIndex].category_details;
-                                        return detail ? detail.split(', ').map(d => `• ${d}`) : 'No detail';
+                                        const label = context.label || '';
+                                        const value = context.raw || 0;
+                                        const total = data.reduce((sum, item) => sum + item.total, 0);
+                                        const percentage = Math.round((value / total) * 100);
+                                        return `${label}: ${value} perusahaan (${percentage}%)`;
                                     }
+                                }
+                            },
+                            datalabels: {
+                                anchor: 'end',
+                                align: 'end',
+                                color: '#111',
+                                font: {
+                                    weight: 'bold',
+                                    size: 11
+                                },
+                                formatter: (value, context) => {
+                                    const total = data.reduce((sum, item) => sum + item.total, 0);
+                                    const percentage = Math.round((value / total) * 100);
+                                    return `${value} (${percentage}%)`;
                                 }
                             }
                         },
                         scales: {
                             x: {
-                                beginAtZero: true
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Jumlah Perusahaan',
+                                    font: {
+                                        weight: 'bold'
+                                    }
+                                }
+                            },
+                            y: {
+                                ticks: {
+                                    font: {
+                                        size: 12
+                                    }
+                                }
                             }
                         }
                     },
                     plugins: [ChartDataLabels]
                 });
 
+                // Update toggle button
+                const toggleBtn = document.getElementById('toggleCategoryChart');
+                const toggleText = document.getElementById('toggleCategoryText');
+
+                if (data.length > CATEGORY_LIMIT) {
+                    toggleBtn.style.display = 'block';
+                    toggleText.textContent = showAll ? 'Show Less Categories' : `Show ${data.length - CATEGORY_LIMIT} More Categories`;
+                    toggleBtn.querySelector('.icon').textContent = showAll ? '🔼' : '🔽';
+                } else {
+                    toggleBtn.style.display = 'none';
+                }
+
+                // Adjust chart height based on number of items
                 const chartContainer = document.querySelector('#categoryCard .chart-container');
-                chartContainer.style.height = Math.max(250, displayData.length * 40) + 'px';
+                const baseHeight = 400;
+                const itemHeight = 35;
+                const newHeight = showAll ? Math.max(baseHeight, data.length * itemHeight) : baseHeight;
+                chartContainer.style.height = newHeight + 'px';
             }
 
-            renderCategoryChart(false);
+            // ================== TYPE CHART ==================
+            let currentTypePartner = 'all';
+            let typeChartInstance = null;
+            let isTypeExpanded = false;
+            const TYPE_LIMIT = 8; // Tampilkan 8 tipe pertama, sisanya di show more
 
+            function renderTypeChart(data, partner = 'all', showAll = false) {
+                const ctx = document.getElementById('typeChart').getContext('2d');
+
+                if (typeChartInstance) typeChartInstance.destroy();
+
+                // Filter data berdasarkan showAll
+                let displayData = data;
+                if (!showAll && data.length > TYPE_LIMIT) {
+                    displayData = data.slice(0, TYPE_LIMIT);
+                }
+
+                const labels = displayData.map(d => d.type);
+                const chartData = displayData.map(d => d.total);
+
+                // Generate colors
+                const backgroundColors = generateColors(displayData.length, '#f59e0b', '#d97706');
+
+                typeChartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Jumlah Perusahaan',
+                            data: chartData,
+                            backgroundColor: backgroundColors,
+                            borderColor: '#ffffff',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            title: {
+                                display: true,
+                                text: partner === 'all' ?
+                                    `Distribusi Tipe Perusahaan (All Partners) - ${displayData.length} types` : `Distribusi Tipe - ${partner} - ${displayData.length} types`,
+                                font: {
+                                    size: 14,
+                                    weight: 'bold'
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const label = context.label || '';
+                                        const value = context.raw || 0;
+                                        const total = data.reduce((sum, item) => sum + item.total, 0);
+                                        const percentage = Math.round((value / total) * 100);
+                                        return `${label}: ${value} perusahaan (${percentage}%)`;
+                                    }
+                                }
+                            },
+                            datalabels: {
+                                anchor: 'end',
+                                align: 'end',
+                                color: '#111',
+                                font: {
+                                    weight: 'bold',
+                                    size: 11
+                                },
+                                formatter: (value, context) => {
+                                    const total = data.reduce((sum, item) => sum + item.total, 0);
+                                    const percentage = Math.round((value / total) * 100);
+                                    return `${value} (${percentage}%)`;
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Jumlah Perusahaan',
+                                    font: {
+                                        weight: 'bold'
+                                    }
+                                }
+                            },
+                            y: {
+                                ticks: {
+                                    font: {
+                                        size: 12
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    plugins: [ChartDataLabels]
+                });
+
+                // Update toggle button
+                const toggleBtn = document.getElementById('toggleTypeChart');
+                const toggleText = document.getElementById('toggleTypeText');
+
+                if (data.length > TYPE_LIMIT) {
+                    toggleBtn.style.display = 'block';
+                    toggleText.textContent = showAll ? 'Show Less Types' : `Show ${data.length - TYPE_LIMIT} More Types`;
+                    toggleBtn.querySelector('.icon').textContent = showAll ? '🔼' : '🔽';
+                } else {
+                    toggleBtn.style.display = 'none';
+                }
+
+                // Adjust chart height based on number of items
+                const chartContainer = document.querySelector('#typeCard .chart-container');
+                const baseHeight = 400;
+                const itemHeight = 35;
+                const newHeight = showAll ? Math.max(baseHeight, data.length * itemHeight) : baseHeight;
+                chartContainer.style.height = newHeight + 'px';
+            }
+
+            // Helper function untuk generate colors
+            function generateColors(count, color1, color2) {
+                const colors = [];
+                for (let i = 0; i < count; i++) {
+                    const ratio = i / (count - 1);
+                    const r = Math.round(parseInt(color1.slice(1, 3), 16) * (1 - ratio) + parseInt(color2.slice(1, 3), 16) * ratio);
+                    const g = Math.round(parseInt(color1.slice(3, 5), 16) * (1 - ratio) + parseInt(color2.slice(3, 5), 16) * ratio);
+                    const b = Math.round(parseInt(color1.slice(5, 7), 16) * (1 - ratio) + parseInt(color2.slice(5, 7), 16) * ratio);
+                    colors.push(`#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`);
+                }
+                return colors;
+            }
+
+            // Fungsi untuk load data via AJAX
+            function loadCategoryData(partner, showAll = false) {
+                if (partner === 'all') {
+                    renderCategoryChart(categoryDataAll, 'all', showAll);
+                    return;
+                }
+
+                // Show loading
+                const ctx = document.getElementById('categoryChart').getContext('2d');
+                ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+                ctx.font = '16px Arial';
+                ctx.fillStyle = '#666';
+                ctx.textAlign = 'center';
+                ctx.fillText('Loading...', ctx.canvas.width / 2, ctx.canvas.height / 2);
+
+                $.ajax({
+                    url: 'get_category_data.php',
+                    type: 'POST',
+                    data: {
+                        partner: partner
+                    },
+                    success: function(response) {
+                        const data = JSON.parse(response);
+                        renderCategoryChart(data, partner, showAll);
+                    },
+                    error: function() {
+                        ctx.fillText('Error loading data', ctx.canvas.width / 2, ctx.canvas.height / 2);
+                    }
+                });
+            }
+
+            function loadTypeData(partner, showAll = false) {
+                if (partner === 'all') {
+                    renderTypeChart(typeDataAll, 'all', showAll);
+                    return;
+                }
+
+                // Show loading
+                const ctx = document.getElementById('typeChart').getContext('2d');
+                ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+                ctx.font = '16px Arial';
+                ctx.fillStyle = '#666';
+                ctx.textAlign = 'center';
+                ctx.fillText('Loading...', ctx.canvas.width / 2, ctx.canvas.height / 2);
+
+                $.ajax({
+                    url: 'get_type_data.php',
+                    type: 'POST',
+                    data: {
+                        partner: partner
+                    },
+                    success: function(response) {
+                        const data = JSON.parse(response);
+                        renderTypeChart(data, partner, showAll);
+                    },
+                    error: function() {
+                        ctx.fillText('Error loading data', ctx.canvas.width / 2, ctx.canvas.height / 2);
+                    }
+                });
+            }
+
+            // Event listeners untuk filter
+            document.getElementById('categoryPartnerFilter')?.addEventListener('change', function(e) {
+                currentCategoryPartner = e.target.value;
+                isCategoryExpanded = false; // Reset ke show less saat ganti partner
+                loadCategoryData(currentCategoryPartner, false);
+            });
+
+            document.getElementById('typePartnerFilter')?.addEventListener('change', function(e) {
+                currentTypePartner = e.target.value;
+                isTypeExpanded = false; // Reset ke show less saat ganti partner
+                loadTypeData(currentTypePartner, false);
+            });
+
+            // Event listeners untuk toggle buttons
             document.getElementById('toggleCategoryChart')?.addEventListener('click', function() {
                 isCategoryExpanded = !isCategoryExpanded;
-                renderCategoryChart(isCategoryExpanded);
-                document.getElementById('toggleCategoryText').textContent = isCategoryExpanded ? 'Show Less' : 'Show More';
-                this.querySelector('.icon').textContent = isCategoryExpanded ? '🔼' : '🔽';
+                loadCategoryData(currentCategoryPartner, isCategoryExpanded);
 
-                if (!isCategoryExpanded) {
-                    document.getElementById('categoryCard')?.scrollIntoView({
+                // Scroll ke chart jika show more
+                if (isCategoryExpanded) {
+                    document.getElementById('categoryCard').scrollIntoView({
                         behavior: 'smooth',
                         block: 'start'
                     });
                 }
             });
-
-            // ================== TYPE CHART ==================
-            let isTypeExpanded = false;
-
-            function renderTypeChart(showAll = false) {
-                const displayData = showAll ? typeData : typeData.slice(0, 5);
-                const ctx = document.getElementById('typeChart').getContext('2d');
-
-                if (window.typeChartInstance) window.typeChartInstance.destroy();
-
-                const labels = displayData.map(d => {
-                    const name = d.display_name?.trim();
-                    const displayName = name && name !== 'null' ? name : d.partner_id || 'Unknown';
-                    const promoCode = d.partner_id || '-';
-                    return `${displayName} - ${promoCode}`;
-                });
-
-                window.typeChartInstance = new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            label: 'Company Type',
-                            data: displayData.map(d => d.total_type),
-                            backgroundColor: '#f59e0b',
-                            borderColor: '#d97706',
-                            borderWidth: 1
-                        }]
-                    },
-                    options: {
-                        indexAxis: 'y',
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                display: false
-                            },
-                            tooltip: {
-                                callbacks: {
-                                    label: function(context) {
-                                        const detail = displayData[context.dataIndex].type_details;
-                                        return detail ? detail.split(', ').map(d => `• ${d}`) : 'No detail';
-                                    }
-                                }
-                            }
-                        },
-                        scales: {
-                            x: {
-                                beginAtZero: true
-                            }
-                        }
-                    },
-                    plugins: [ChartDataLabels]
-                });
-
-                const chartContainer = document.querySelector('#typeCard .chart-container');
-                chartContainer.style.height = Math.max(250, displayData.length * 40) + 'px';
-            }
-
-            renderTypeChart(false);
 
             document.getElementById('toggleTypeChart')?.addEventListener('click', function() {
                 isTypeExpanded = !isTypeExpanded;
-                renderTypeChart(isTypeExpanded);
-                document.getElementById('toggleTypeText').textContent = isTypeExpanded ? 'Show Less' : 'Show More';
-                this.querySelector('.icon').textContent = isTypeExpanded ? '🔼' : '🔽';
+                loadTypeData(currentTypePartner, isTypeExpanded);
 
-                if (!isTypeExpanded) {
-                    document.getElementById('typeCard')?.scrollIntoView({
+                // Scroll ke chart jika show more
+                if (isTypeExpanded) {
+                    document.getElementById('typeCard').scrollIntoView({
                         behavior: 'smooth',
                         block: 'start'
                     });
                 }
             });
+
+            // Render awal
+            renderCategoryChart(categoryDataAll, 'all', false);
+            renderTypeChart(typeDataAll, 'all', false);
         </script>
-            <?php if (!empty($_SESSION['bulk_upload_result'])): ?>
-        <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                const result = <?= json_encode($_SESSION['bulk_upload_result']) ?>;
-                deleteSessionBulkResult(); // hapus session setelah tampil
 
-                if (result.error) {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Upload Gagal',
-                        text: result.error,
-                        confirmButtonText: 'OK'
-                    });
-                } else {
-                    const success = result.success || 0;
-                    const failed = result.failed || 0;
-                    let title = 'Upload Selesai!';
-                    let html = `<div style="text-align:left;">
-            <p><strong>Berhasil:</strong> ${success} kontak</p>
-            <p><strong>Gagal:</strong> ${failed} kontak</p>
-        </div>`;
-                    let icon = 'success';
+        <?php if (!empty($_SESSION['bulk_upload_result'])): ?>
+            <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    const res = <?= json_encode($_SESSION['bulk_upload_result']) ?>;
+                    let title, html, icon;
 
-                    if (success === 0 && failed > 0) {
+                    if (res.error) {
+                        // Kasus error khusus (file kosong, tidak ada data, dll)
+                        title = 'Upload Gagal';
+                        html = `<p><strong>${res.error}</strong></p>`;
+                        if (res.detail) {
+                            html += `<p class="text-sm text-gray-600 mt-2">${res.detail}</p>`;
+                        }
                         icon = 'error';
-                        title = 'Upload Gagal!';
-                    } else if (success > 0 && failed > 0) {
-                        icon = 'warning';
-                        title = 'Sebagian Berhasil';
+                    } else {
+                        // Kasus berhasil/gagal sebagian
+                        const success = res.success || 0;
+                        const invalid = res.failed_invalid || 0;
+                        const duplicate = res.failed_duplicate || 0;
+                        const totalFailed = invalid + duplicate;
+
+                        if (success === 0 && totalFailed > 0) {
+                            // ❌ Tidak ada yang berhasil → beri pesan "Gagal"
+                            title = 'Upload Gagal';
+                            html = `<div style="text-align:left; line-height:1.6;">
+                <p><strong>Tidak ada kontak yang berhasil diupload.</strong></p>`;
+                            if (duplicate > 0) {
+                                html += `<p><strong>Gagal (duplikat):</strong> ${duplicate} email sudah terdaftar</p>`;
+                            }
+                            if (invalid > 0) {
+                                html += `<p><strong>Gagal (data tidak valid):</strong> ${invalid} baris</p>`;
+                            }
+                            html += `</div>`;
+                            icon = 'error';
+                        } else if (success > 0 && totalFailed === 0) {
+                            // ✅ Semua berhasil
+                            title = 'Upload Berhasil!';
+                            html = `<p>Semua data berhasil diupload.</p><p><strong>Berhasil:</strong> ${success} kontak</p>`;
+                            icon = 'success';
+                        } else if (success > 0 && totalFailed > 0) {
+                            // ⚠️ Sebagian berhasil
+                            title = 'Upload Sebagian Berhasil';
+                            html = `<div style="text-align:left; line-height:1.6;">
+                <p><strong>Berhasil:</strong> ${success} kontak</p>`;
+                            if (duplicate > 0) {
+                                html += `<p><strong>Gagal (duplikat):</strong> ${duplicate} email sudah terdaftar</p>`;
+                            }
+                            if (invalid > 0) {
+                                html += `<p><strong>Gagal (data tidak valid):</strong> ${invalid} baris</p>`;
+                            }
+                            html += `</div>`;
+                            icon = 'warning';
+                        } else {
+                            // 🤷‍♂️ Tidak ada data diproses (misal: file hanya header)
+                            title = 'Tidak Ada Data Diproses';
+                            html = 'File tidak mengandung data valid.';
+                            icon = 'info';
+                        }
                     }
 
                     Swal.fire({
@@ -1658,18 +1919,10 @@ PT Rayterton Indonesia`
                         html: html,
                         confirmButtonText: 'OK'
                     });
-                }
-            });
-
-            // Fungsi untuk hapus session via AJAX (opsional) atau cukup unset di PHP
-            function deleteSessionBulkResult() {
-                fetch('clear_bulk_session.php', {
-                    method: 'POST'
                 });
-            }
-        </script>
-        <?php unset($_SESSION['bulk_upload_result']); ?>
-    <?php endif; ?>
+            </script>
+            <?php unset($_SESSION['bulk_upload_result']); ?>
+        <?php endif; ?>
 </body>
 
 </html>

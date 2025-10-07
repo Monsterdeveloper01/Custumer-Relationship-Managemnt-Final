@@ -10,9 +10,9 @@ require '../../Model/db.php';
 
 $marketing_id = $_SESSION['user']['marketing_id'];
 $success = 0;
-$failed = 0;
+$failed_invalid = 0;   // data tidak valid (email salah, nama kosong, dll)
+$failed_duplicate = 0; // email sudah ada
 
-// Daftar kategori yang diizinkan (harus sama dengan form & template)
 $allowedCategories = [
     'Banking',
     'Multifinance',
@@ -32,19 +32,18 @@ $allowedCategories = [
     'Property and Real Estate'
 ];
 
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file'])) {
     $file = $_FILES['csv_file'];
 
     if ($file['error'] !== UPLOAD_ERR_OK) {
-        $_SESSION['bulk_msg'] = "Error upload file.";
+        $_SESSION['bulk_upload_result'] = ['error' => 'Error upload file.'];
         header("Location: dashboard.php");
         exit;
     }
 
     $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
     if ($ext !== 'csv') {
-        $_SESSION['bulk_msg'] = "Hanya file .csv yang diizinkan.";
+        $_SESSION['bulk_upload_result'] = ['error' => 'Hanya file .csv yang diizinkan.'];
         header("Location: dashboard.php");
         exit;
     }
@@ -53,7 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file'])) {
         $header = fgetcsv($handle); // skip header
 
         while (($row = fgetcsv($handle)) !== false) {
-            // Ambil data dari CSV (sesuai urutan kolom template)
+            // Ambil data
             $nama_perusahaan = trim($row[0] ?? '');
             $email = trim($row[1] ?? '');
             $email_lain = trim($row[2] ?? '');
@@ -68,49 +67,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file'])) {
             $kota = trim($row[11] ?? '');
             $alamat = trim($row[12] ?? '');
 
+            // Skip baris instruksi/contoh
+            if (strpos($row[0], 'HAPUS') !== false || strpos($row[1], 'contoh') !== false) {
+                continue;
+            }
+
             // Skip baris kosong
             if (empty($email) && empty($nama_perusahaan)) {
                 continue;
             }
 
-            // ✅ Validasi 1: Email wajib & valid
+            // ✅ Validasi: email wajib & valid
             if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                $failed++;
+                $failed_invalid++;
                 continue;
             }
 
-            // ✅ Validasi 2: Nama perusahaan wajib
+            // ✅ Validasi: nama_perusahaan wajib
             if (empty($nama_perusahaan)) {
-                $failed++;
+                $failed_invalid++;
                 continue;
             }
 
-            // ✅ Validasi 3: Tipe perusahaan harus Swasta/Bumn/Bumd
-            if (empty($tipe) || !in_array($tipe, ['Swasta', 'Bumn', 'Bumd', 'SWASTA', 'BUMN', 'BUMD'])) {
-                $failed++;
+            // ✅ Validasi: tipe perusahaan
+            if (empty($tipe) || !in_array($tipe, ['Swasta', 'Bumn', 'Bumd'])) {
+                $failed_invalid++;
                 continue;
             }
 
-            // ✅ Validasi 4: Kategori perusahaan (jika diisi, harus sesuai daftar)
+            // ✅ Validasi: kategori perusahaan
             if ($kategori_perusahaan !== '' && !in_array($kategori_perusahaan, $allowedCategories)) {
-                $failed++;
+                $failed_invalid++;
                 continue;
             }
 
-            // ✅ Cek duplikat berdasarkan email
-            $stmt = $pdo->prepare("SELECT email FROM crm_contacts_staging WHERE email = ?");
+            // ✅ Cek duplikat berdasarkan email (PRIMARY KEY)
+            $stmt = $pdo->prepare("SELECT 1 FROM crm_contacts_staging WHERE email = ?");
             $stmt->execute([$email]);
             if ($stmt->fetch()) {
-                $failed++;
+                $failed_duplicate++;
                 continue;
             }
 
-            // Di dalam loop while di bulk_upload.php
-            if (strpos($row[0], 'HAPUS') !== false || strpos($row[1], 'contoh') !== false) {
-                continue; // skip baris instruksi/contoh
-            }
-
-            // ✅ Insert ke database
+            // ✅ Insert
             $stmt = $pdo->prepare("
                 INSERT INTO crm_contacts_staging 
                 (nama_perusahaan, email, email_lain, nama, no_telp1, no_telp2, website,
@@ -140,13 +139,66 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file'])) {
         fclose($handle);
     }
 
-    if ($success > 0 || $failed > 0) {
+    // Hitung total baris yang dibaca (termasuk header)
+    $totalRows = 0;
+    $processedRows = 0;
+
+    if (($handle = fopen($file['tmp_name'], 'r')) !== false) {
+        $header = fgetcsv($handle); // skip header
+        $totalRows = 1; // header dihitung
+
+        while (($row = fgetcsv($handle)) !== false) {
+            $totalRows++;
+            $processedRows++; // coba proses
+
+            // Skip jika baris terlalu pendek
+            if (count($row) < 13) {
+                $failed_invalid++;
+                continue;
+            }
+
+            // Ambil data
+            $nama_perusahaan = trim($row[0] ?? '');
+            $email = trim($row[1] ?? '');
+            // ... (ambil semua kolom seperti sebelumnya)
+
+            // Skip baris instruksi HANYA jika mengandung teks khusus DI KOLOM PERTAMA
+            if (strpos($row[0], 'HAPUS') !== false || strpos($row[1], 'contoh@') !== false) {
+                $processedRows--; // batalkan hitungan
+                continue;
+            }
+
+            // Skip baris benar-benar kosong
+            if (empty($email) && empty($nama_perusahaan)) {
+                $processedRows--;
+                continue;
+            }
+
+            // ... (validasi & insert seperti sebelumnya)
+        }
+        fclose($handle);
+    }
+
+    // 🔥 Tentukan pesan berdasarkan kondisi
+    if ($totalRows <= 1) {
+        // Hanya header, tidak ada data
         $_SESSION['bulk_upload_result'] = [
-            'success' => $success,
-            'failed' => $failed
+            'error' => 'File CSV kosong. Tidak ada data untuk diupload.',
+            'detail' => 'Pastikan file berisi minimal 1 baris data di bawah header.'
+        ];
+    } elseif ($processedRows === 0) {
+        // Ada baris, tapi semua di-skip
+        $_SESSION['bulk_upload_result'] = [
+            'error' => 'Tidak ada data valid yang diproses.',
+            'detail' => 'Pastikan Anda menghapus baris contoh/instruksi sebelum upload.'
         ];
     } else {
-        $_SESSION['bulk_upload_result'] = ['error' => 'Tidak ada data yang diproses.'];
+        // Ada data diproses → tampilkan hasil
+        $_SESSION['bulk_upload_result'] = [
+            'success' => $success,
+            'failed_invalid' => $failed_invalid,
+            'failed_duplicate' => $failed_duplicate
+        ];
     }
 
     header("Location: dashboard.php");

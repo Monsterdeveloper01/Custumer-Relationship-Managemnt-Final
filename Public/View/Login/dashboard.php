@@ -663,6 +663,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <!-- Bulk Upload CSV -->
         <div class="card mt-6">
             <h3 class="text-lg font-semibold mb-3">Upload Kontak Massal (CSV)</h3>
+            <div class="card mt-2">
+                <h3 class="text-lg font-semibold mb-3">📋 Panduan Upload CSV</h3>
+                <ul class="list-disc pl-5 text-sm text-gray-700 space-y-1">
+                    <li><strong>Kolom wajib:</strong> <code>nama_perusahaan</code>, <code>email</code>, <code>no_telp1</code>, <code>tipe</code></li>
+                    <li><strong>Tipe perusahaan:</strong> hanya boleh <code>Swasta</code>, <code>Bumn</code>, atau <code>Bumd</code></li>
+                    <li><strong>Kategori perusahaan:</strong> pilih dari daftar yang tersedia di template</li>
+                    <li><strong>Hapus baris contoh</strong> sebelum upload</li>
+                    <li>Simpan file sebagai <strong>CSV UTF-8</strong></li>
+                </ul>
+            </div>
             <form method="POST" enctype="multipart/form-data" action="bulk_upload.php">
                 <input type="file" name="csv_file" accept=".csv" required
                     class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
@@ -1489,49 +1499,54 @@ PT Rayterton Indonesia`
     <?php if (!empty($_SESSION['bulk_upload_result'])): ?>
         <script>
             document.addEventListener('DOMContentLoaded', function() {
-                const result = <?= json_encode($_SESSION['bulk_upload_result']) ?>;
-                deleteSessionBulkResult(); // hapus session setelah tampil
+                const res = <?= json_encode($_SESSION['bulk_upload_result']) ?>;
+                let title, html, icon;
 
-                if (result.error) {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Upload Gagal',
-                        text: result.error,
-                        confirmButtonText: 'OK'
-                    });
-                } else {
-                    const success = result.success || 0;
-                    const failed = result.failed || 0;
-                    let title = 'Upload Selesai!';
-                    let html = `<div style="text-align:left;">
-            <p><strong>Berhasil:</strong> ${success} kontak</p>
-            <p><strong>Gagal:</strong> ${failed} kontak</p>
-        </div>`;
-                    let icon = 'success';
-
-                    if (success === 0 && failed > 0) {
-                        icon = 'error';
-                        title = 'Upload Gagal!';
-                    } else if (success > 0 && failed > 0) {
-                        icon = 'warning';
-                        title = 'Sebagian Berhasil';
+                if (res.error) {
+                    // Kasus error khusus (file kosong, tidak ada data, dll)
+                    title = 'Upload Tidak Berhasil';
+                    html = `<p><strong>${res.error}</strong></p>`;
+                    if (res.detail) {
+                        html += `<p class="text-sm text-gray-600 mt-2">${res.detail}</p>`;
                     }
+                    icon = 'warning';
+                } else {
+                    // Kasus berhasil/gagal sebagian
+                    const success = res.success || 0;
+                    const invalid = res.failed_invalid || 0;
+                    const duplicate = res.failed_duplicate || 0;
+                    const totalFailed = invalid + duplicate;
 
-                    Swal.fire({
-                        icon: icon,
-                        title: title,
-                        html: html,
-                        confirmButtonText: 'OK'
-                    });
+                    if (success === 0 && totalFailed === 0) {
+                        title = 'Tidak Ada Data Diproses';
+                        html = 'File tidak mengandung data valid.';
+                        icon = 'info';
+                    } else if (success > 0 && totalFailed === 0) {
+                        title = 'Upload Berhasil!';
+                        html = `<p>Semua data berhasil diupload.</p><p><strong>Berhasil:</strong> ${success} kontak</p>`;
+                        icon = 'success';
+                    } else {
+                        title = totalFailed > 0 ? 'Upload Sebagian Berhasil' : 'Upload Berhasil';
+                        html = `<div style="text-align:left; line-height:1.6;">
+                <p><strong>Berhasil:</strong> ${success} kontak</p>`;
+                        if (duplicate > 0) {
+                            html += `<p><strong>Gagal (duplikat):</strong> ${duplicate} email sudah terdaftar</p>`;
+                        }
+                        if (invalid > 0) {
+                            html += `<p><strong>Gagal (data tidak valid):</strong> ${invalid} baris</p>`;
+                        }
+                        html += `</div>`;
+                        icon = totalFailed > 0 ? 'warning' : 'success';
+                    }
                 }
-            });
 
-            // Fungsi untuk hapus session via AJAX (opsional) atau cukup unset di PHP
-            function deleteSessionBulkResult() {
-                fetch('clear_bulk_session.php', {
-                    method: 'POST'
+                Swal.fire({
+                    icon: icon,
+                    title: title,
+                    html: html,
+                    confirmButtonText: 'OK'
                 });
-            }
+            });
         </script>
         <?php unset($_SESSION['bulk_upload_result']); ?>
     <?php endif; ?>
