@@ -1504,12 +1504,12 @@ PT Rayterton Indonesia`
 
                 if (res.error) {
                     // Kasus error khusus (file kosong, tidak ada data, dll)
-                    title = 'Upload Tidak Berhasil';
+                    title = 'Upload Gagal';
                     html = `<p><strong>${res.error}</strong></p>`;
                     if (res.detail) {
                         html += `<p class="text-sm text-gray-600 mt-2">${res.detail}</p>`;
                     }
-                    icon = 'warning';
+                    icon = 'error';
                 } else {
                     // Kasus berhasil/gagal sebagian
                     const success = res.success || 0;
@@ -1517,16 +1517,27 @@ PT Rayterton Indonesia`
                     const duplicate = res.failed_duplicate || 0;
                     const totalFailed = invalid + duplicate;
 
-                    if (success === 0 && totalFailed === 0) {
-                        title = 'Tidak Ada Data Diproses';
-                        html = 'File tidak mengandung data valid.';
-                        icon = 'info';
+                    if (success === 0 && totalFailed > 0) {
+                        // ❌ Tidak ada yang berhasil → beri pesan "Gagal"
+                        title = 'Upload Gagal';
+                        html = `<div style="text-align:left; line-height:1.6;">
+                <p><strong>Tidak ada kontak yang berhasil diupload.</strong></p>`;
+                        if (duplicate > 0) {
+                            html += `<p><strong>Gagal (duplikat):</strong> ${duplicate} email sudah terdaftar</p>`;
+                        }
+                        if (invalid > 0) {
+                            html += `<p><strong>Gagal (data tidak valid):</strong> ${invalid} baris</p>`;
+                        }
+                        html += `</div>`;
+                        icon = 'error';
                     } else if (success > 0 && totalFailed === 0) {
+                        // ✅ Semua berhasil
                         title = 'Upload Berhasil!';
                         html = `<p>Semua data berhasil diupload.</p><p><strong>Berhasil:</strong> ${success} kontak</p>`;
                         icon = 'success';
-                    } else {
-                        title = totalFailed > 0 ? 'Upload Sebagian Berhasil' : 'Upload Berhasil';
+                    } else if (success > 0 && totalFailed > 0) {
+                        // ⚠️ Sebagian berhasil
+                        title = 'Upload Sebagian Berhasil';
                         html = `<div style="text-align:left; line-height:1.6;">
                 <p><strong>Berhasil:</strong> ${success} kontak</p>`;
                         if (duplicate > 0) {
@@ -1536,7 +1547,12 @@ PT Rayterton Indonesia`
                             html += `<p><strong>Gagal (data tidak valid):</strong> ${invalid} baris</p>`;
                         }
                         html += `</div>`;
-                        icon = totalFailed > 0 ? 'warning' : 'success';
+                        icon = 'warning';
+                    } else {
+                        // 🤷‍♂️ Tidak ada data diproses (misal: file hanya header)
+                        title = 'Tidak Ada Data Diproses';
+                        html = 'File tidak mengandung data valid.';
+                        icon = 'info';
                     }
                 }
 
