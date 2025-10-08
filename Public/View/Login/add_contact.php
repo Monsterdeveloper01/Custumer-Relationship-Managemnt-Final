@@ -1,4 +1,5 @@
 <?php
+session_start();
 require_once __DIR__ . '/../../Model/db.php';
 require_once __DIR__ . '/../../Controller/functions.php';
 require_login();
@@ -6,13 +7,29 @@ require_login();
 $mid = current_marketing_id();
 $errors = [];
 
+// ambil role dari session
+$role = strtolower($_SESSION['user']['role'] ?? 'guest');
+
+if ($role === 'partner') {
+    $autoShowForm = 'CLT';
+} else {
+    $autoShowForm = null;
+}
+
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $flag = trim($_POST['flag'] ?? '');
     $partner_type = trim($_POST['partner_type'] ?? '');
 
+
     // Validasi flag
     if (!in_array($flag, ['CLT', 'MKT'])) {
         $errors[] = "Jenis kontak (flag) wajib dipilih.";
+    }
+
+    // Hanya admin/user yang bisa pilih MKT
+    if ($flag === 'MKT' && !in_array($role, ['admin', 'user'])) {
+        $errors[] = "Anda tidak memiliki izin untuk menambahkan Calon Partner (MKT).";
     }
 
     if ($flag === 'MKT' && !in_array($partner_type, ['individual', 'institution'])) {
@@ -88,7 +105,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $nama_bank = trim($_POST['nama_bank'] ?? '');
             $no_rekening = trim($_POST['no_rekening'] ?? '');
             $profil_jaringan = trim($_POST['profil_jaringan'] ?? '');
-            $segment_industri = trim($_POST['segment_industri'] ?? '');
+            $segment_industri_fokus = trim($_POST['segment_industri_fokus'] ?? '');
 
             if ($email === '') {
                 $errors[] = "Email wajib diisi.";
@@ -125,7 +142,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 ':alamat' => "Bank: {$nama_bank}, Rek: {$no_rekening}\nProfil: {$profil_jaringan}",
                                 ':kategori_perusahaan' => 'Individual Partner',
                                 ':tipe' => 'INDIVIDU',
-                                ':segment_industri_fokus' => $segment_industri,
+                                ':segment_industri_fokus' => $segment_industri_fokus,
                                 ':ditemukan_oleh' => $mid,
                                 ':status' => 'input',
                                 ':flag' => 'MKT',
@@ -150,7 +167,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 ':alamat' => "Bank: {$nama_bank}, Rek: {$no_rekening}\nProfil: {$profil_jaringan}",
                                 ':kategori_perusahaan' => 'Institution Partner',
                                 ':tipe' => 'INSTITUSI',
-                                ':segment_industri_fokus' => $segment_industri,
+                                ':segment_industri_fokus' => $segment_industri_fokus,
                                 ':ditemukan_oleh' => $mid,
                                 ':status' => 'input',
                                 ':flag' => 'MKT',
@@ -166,6 +183,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
     }
+}
+
+// Misalnya setelah variabel $role sudah didapat
+if ($role === 'partner') {
+    $autoShowForm = 'CLT';
+} else {
+    $autoShowForm = null;
 }
 ?>
 
@@ -252,22 +276,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <form method="post" class="grid grid-cols-1 custom-grid gap-4 lg:gap-6" id="mainForm">
                 <!-- Flag Type -->
-                <div>
-                    <label class="block text-sm font-semibold text-gray-700">
-                        Jenis Kontak <span class="text-red-500">*</span>
-                    </label>
-                    <select name="flag" id="flagSelect"
-                        class="mt-1 w-full rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-400 p-3 transition"
-                        required>
-                        <option value="">-- Pilih --</option>
-                        <option value="CLT" <?= (($_POST['flag'] ?? '') === 'CLT') ? 'selected' : '' ?>>Calon Client (CLT)</option>
-                        <option value="MKT" <?= (($_POST['flag'] ?? '') === 'MKT') ? 'selected' : '' ?>>Calon Partner (MKT)</option>
-                    </select>
-                </div>
+                <?php if ($role === 'partner'): ?>
+                    <input type="hidden" name="flag" value="CLT">
+                <?php else: ?>
+                    <div class="col-span-1 sm:col-span-2">
+                        <label for="flagSelect" class="block text-sm font-semibold text-gray-700">
+                            Jenis Kontak <span class="text-red-500">*</span>
+                        </label>
+                        <select name="flag" id="flagSelect" required
+                            class="mt-1 w-full rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-400 p-3 transition">
+                            <option value="">-- Pilih --</option>
+                            <option value="CLT" <?= (($_POST['flag'] ?? '') === 'CLT') ? 'selected' : '' ?>>
+                                Calon Client (CLT)
+                            </option>
+                            <?php if (in_array($role, ['admin', 'user'])): ?>
+                                <option value="MKT" <?= (($_POST['flag'] ?? '') === 'MKT') ? 'selected' : '' ?>>
+                                    Calon Partner (MKT)
+                                </option>
+                            <?php endif; ?>
+                        </select>
+                    </div>
+                <?php endif; ?>
+
+
 
                 <!-- Partner Type (hanya muncul jika MKT) -->
                 <div id="partnerTypeSection" class="hidden">
-                    <label class="block text-sm font-semibold text-gray-700">
+                    <label for="partnerTypeSelect" class="block text-sm font-semibold text-gray-700">
                         Jenis Partner <span class="text-red-500">*</span>
                     </label>
                     <select name="partner_type" id="partnerTypeSelect"
@@ -282,38 +317,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div id="cltForm" class="<?= (($_POST['flag'] ?? '') === 'CLT') ? '' : 'hidden' ?>">
                     <!-- Company Email -->
                     <div class="col-span-1 sm:col-span-2">
-                        <label class="block text-sm font-semibold text-gray-700">Company Email <span class="text-red-500">*</span></label>
-                        <input type="email" name="email" placeholder="contoh: info@perusahaan.com"
+                        <label for="clt_email" class="block text-sm font-semibold text-gray-700">
+                            Company Email <span class="text-red-500">*</span>
+                        </label>
+                        <input id="clt_email" type="email" name="email" placeholder="contoh: info@perusahaan.com"
                             value="<?= h($_POST['email'] ?? '') ?>"
                             class="mt-1 w-full rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-400 p-3 transition"
-                            required>
+                            required autocomplete="email">
                     </div>
 
                     <div class="col-span-1 sm:col-span-2">
-                        <label class="block text-sm font-semibold text-gray-700">Secondary Email</label>
-                        <input type="email" name="email_lain" placeholder="Email alternatif (opsional)"
+                        <label for="clt_email_lain" class="block text-sm font-semibold text-gray-700">Secondary Email</label>
+                        <input id="clt_email_lain" type="email" name="email_lain" placeholder="Email alternatif (opsional)"
                             value="<?= h($_POST['email_lain'] ?? '') ?>"
                             class="mt-1 w-full rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-400 p-3 transition">
                     </div>
 
                     <div>
-                        <label class="block text-sm font-semibold text-gray-700">Company Name <span class="text-red-500">*</span></label>
-                        <input type="text" name="nama_perusahaan" placeholder="Nama lengkap perusahaan"
+                        <label for="clt_nama_perusahaan" class="block text-sm font-semibold text-gray-700">Company Name <span class="text-red-500">*</span></label>
+                        <input id="clt_nama_perusahaan" type="text" name="nama_perusahaan" placeholder="Nama lengkap perusahaan"
                             value="<?= h($_POST['nama_perusahaan'] ?? '') ?>"
                             class="mt-1 w-full rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-400 p-3 transition"
                             required>
                     </div>
 
                     <div>
-                        <label class="block text-sm font-semibold text-gray-700">Contact Person</label>
-                        <input type="text" name="nama" placeholder="Nama orang yang bisa dihubungi"
+                        <label for="clt_nama" class="block text-sm font-semibold text-gray-700">Contact Person</label>
+                        <input id="clt_nama" type="text" name="nama" placeholder="Nama orang yang bisa dihubungi"
                             value="<?= h($_POST['nama'] ?? '') ?>"
                             class="mt-1 w-full rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-400 p-3 transition">
                     </div>
 
                     <div>
-                        <label class="block text-sm font-semibold text-gray-700">Company Category</label>
-                        <select name="kategori_perusahaan"
+                        <label for="clt_kategori_perusahaan" class="block text-sm font-semibold text-gray-700">Company Category</label>
+                        <select id="clt_kategori_perusahaan" name="kategori_perusahaan"
                             class="mt-1 w-full rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-400 p-3 transition" required>
                             <option value="">-- Select Category --</option>
                             <option value="Banking">Banking</option>
@@ -336,22 +373,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
 
                     <div>
-                        <label class="block text-sm font-semibold text-gray-700">Job Category</label>
-                        <input type="text" name="kategori_jabatan" placeholder="Kategori jabatan"
+                        <label for="clt_kategori_jabatan" class="block text-sm font-semibold text-gray-700">Job Category</label>
+                        <input id="clt_kategori_jabatan" type="text" name="kategori_jabatan" placeholder="Kategori jabatan"
                             value="<?= h($_POST['kategori_jabatan'] ?? '') ?>"
                             class="mt-1 w-full rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-400 p-3 transition">
                     </div>
 
                     <div>
-                        <label class="block text-sm font-semibold text-gray-700">Position Title</label>
-                        <input type="text" name="jabatan_lengkap" placeholder="Jabatan lengkap"
+                        <label for="clt_jabatan_lengkap" class="block text-sm font-semibold text-gray-700">Position Title</label>
+                        <input id="clt_jabatan_lengkap" type="text" name="jabatan_lengkap" placeholder="Jabatan lengkap"
                             value="<?= h($_POST['jabatan_lengkap'] ?? '') ?>"
                             class="mt-1 w-full rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-400 p-3 transition">
                     </div>
 
                     <div>
-                        <label class="block text-sm font-semibold text-gray-700">Type <span class="text-red-500">*</span></label>
-                        <select name="tipe"
+                        <label for="clt_tipe" class="block text-sm font-semibold text-gray-700">Type <span class="text-red-500">*</span></label>
+                        <select id="clt_tipe" name="tipe"
                             class="mt-1 w-full rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-400 p-3 transition"
                             required>
                             <option value="" disabled>-- Pilih tipe perusahaan --</option>
@@ -362,35 +399,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
 
                     <div>
-                        <label class="block text-sm font-semibold text-gray-700">Phone Number 1</label>
-                        <input type="text" name="no_telp1" placeholder="Nomor telepon utama"
+                        <label for="clt_no_telp1" class="block text-sm font-semibold text-gray-700">Phone Number 1</label>
+                        <input id="clt_no_telp1" type="text" name="no_telp1" placeholder="Nomor telepon utama"
                             value="<?= h($_POST['no_telp1'] ?? '') ?>"
                             class="mt-1 w-full rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-400 p-3 transition">
                     </div>
 
                     <div>
-                        <label class="block text-sm font-semibold text-gray-700">Phone Number 2</label>
-                        <input type="text" name="no_telp2" placeholder="Nomor telepon alternatif"
+                        <label for="clt_no_telp2" class="block text-sm font-semibold text-gray-700">Phone Number 2</label>
+                        <input id="clt_no_telp2" type="text" name="no_telp2" placeholder="Nomor telepon alternatif"
                             value="<?= h($_POST['no_telp2'] ?? '') ?>"
                             class="mt-1 w-full rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-400 p-3 transition">
                     </div>
 
                     <div class="col-span-1 sm:col-span-2">
-                        <label class="block text-sm font-semibold text-gray-700">Website</label>
-                        <input type="url" name="website" placeholder="https://www.perusahaan.com"
+                        <label for="clt_website" class="block text-sm font-semibold text-gray-700">Website</label>
+                        <input id="clt_website" type="url" name="website" placeholder="https://www.perusahaan.com"
                             value="<?= h($_POST['website'] ?? '') ?>"
                             class="mt-1 w-full rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-400 p-3 transition">
                     </div>
 
                     <div class="col-span-1 sm:col-span-2">
-                        <label class="block text-sm font-semibold text-gray-700">Address</label>
-                        <textarea name="alamat" placeholder="Alamat lengkap perusahaan" rows="3"
+                        <label for="clt_alamat" class="block text-sm font-semibold text-gray-700">Address</label>
+                        <textarea id="clt_alamat" name="alamat" placeholder="Alamat lengkap perusahaan" rows="3"
                             class="mt-1 w-full rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-400 p-3 transition"><?= h($_POST['alamat'] ?? '') ?></textarea>
                     </div>
 
                     <div>
-                        <label class="block text-sm font-semibold text-gray-700">City</label>
-                        <input type="text" name="kota" placeholder="Masukkan kota perusahaan"
+                        <label for="clt_kota" class="block text-sm font-semibold text-gray-700">City</label>
+                        <input id="clt_kota" type="text" name="kota" placeholder="Masukkan kota perusahaan"
                             value="<?= h($_POST['kota'] ?? '') ?>"
                             class="mt-1 w-full rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-400 p-3 transition">
                     </div>
@@ -400,8 +437,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div id="mktForm" class="<?= (($_POST['flag'] ?? '') === 'MKT') ? '' : 'hidden' ?>">
                     <div id="mktIndividualForm" class="<?= (($_POST['partner_type'] ?? '') === 'individual') ? '' : 'hidden' ?>">
                         <div>
-                            <label class="block text-sm font-semibold text-gray-700">Nama Lengkap <span class="text-red-500">*</span></label>
-                            <input type="text" name="nama_lengkap" placeholder="Nama lengkap calon partner"
+                            <label for="mkt_nama_lengkap" class="block text-sm font-semibold text-gray-700">Nama Lengkap <span class="text-red-500">*</span></label>
+                            <input id="mkt_nama_lengkap" type="text" name="nama_lengkap" placeholder="Nama lengkap calon partner"
                                 value="<?= h($_POST['nama_lengkap'] ?? '') ?>"
                                 class="mt-1 w-full rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-400 p-3 transition">
                         </div>
@@ -409,55 +446,55 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     <div id="mktInstitutionForm" class="<?= (($_POST['partner_type'] ?? '') === 'institution') ? '' : 'hidden' ?>">
                         <div>
-                            <label class="block text-sm font-semibold text-gray-700">Nama Institusi <span class="text-red-500">*</span></label>
-                            <input type="text" name="nama_institusi" placeholder="Nama institusi calon partner"
+                            <label for="mkt_nama_institusi" class="block text-sm font-semibold text-gray-700">Nama Institusi <span class="text-red-500">*</span></label>
+                            <input id="mkt_nama_institusi" type="text" name="nama_institusi" placeholder="Nama institusi calon partner"
                                 value="<?= h($_POST['nama_institusi'] ?? '') ?>"
                                 class="mt-1 w-full rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-400 p-3 transition">
                         </div>
                     </div>
 
                     <div>
-                        <label class="block text-sm font-semibold text-gray-700">Email <span class="text-red-500">*</span></label>
-                        <input type="email" name="email" placeholder="Email partner"
+                        <label for="mkt_email" class="block text-sm font-semibold text-gray-700">Email <span class="text-red-500">*</span></label>
+                        <input id="mkt_email" type="email" name="email" placeholder="Email partner"
                             value="<?= h($_POST['email'] ?? '') ?>"
                             class="mt-1 w-full rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-400 p-3 transition"
-                            required>
+                            required autocomplete="email">
                     </div>
 
                     <div>
-                        <label class="block text-sm font-semibold text-gray-700">WhatsApp <span class="text-red-500">*</span></label>
-                        <input type="text" name="whatsapp" placeholder="Nomor WhatsApp aktif"
+                        <label for="mkt_whatsapp" class="block text-sm font-semibold text-gray-700">WhatsApp <span class="text-red-500">*</span></label>
+                        <input id="mkt_whatsapp" type="text" name="whatsapp" placeholder="Nomor WhatsApp aktif"
                             value="<?= h($_POST['whatsapp'] ?? '') ?>"
                             class="mt-1 w-full rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-400 p-3 transition"
                             required>
                     </div>
 
                     <div>
-                        <label class="block text-sm font-semibold text-gray-700">Nama Bank <span class="text-red-500">*</span></label>
-                        <input type="text" name="nama_bank" placeholder="Nama bank untuk komisi"
+                        <label for="mkt_nama_bank" class="block text-sm font-semibold text-gray-700">Nama Bank <span class="text-red-500">*</span></label>
+                        <input id="mkt_nama_bank" type="text" name="nama_bank" placeholder="Nama bank untuk komisi"
                             value="<?= h($_POST['nama_bank'] ?? '') ?>"
                             class="mt-1 w-full rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-400 p-3 transition"
                             required>
                     </div>
 
                     <div>
-                        <label class="block text-sm font-semibold text-gray-700">Nomor Rekening <span class="text-red-500">*</span></label>
-                        <input type="text" name="no_rekening" placeholder="Nomor rekening"
+                        <label for="mkt_no_rekening" class="block text-sm font-semibold text-gray-700">Nomor Rekening <span class="text-red-500">*</span></label>
+                        <input id="mkt_no_rekening" type="text" name="no_rekening" placeholder="Nomor rekening"
                             value="<?= h($_POST['no_rekening'] ?? '') ?>"
                             class="mt-1 w-full rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-400 p-3 transition"
                             required>
                     </div>
 
                     <div>
-                        <label class="block text-sm font-semibold text-gray-700">Profil Jaringan</label>
-                        <textarea name="profil_jaringan" placeholder="Deskripsi jaringan/profil (opsional)" rows="2"
+                        <label for="mkt_profil_jaringan" class="block text-sm font-semibold text-gray-700">Profil Jaringan</label>
+                        <textarea id="mkt_profil_jaringan" name="profil_jaringan" placeholder="Deskripsi jaringan/profil (opsional)" rows="2"
                             class="mt-1 w-full rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-400 p-3 transition"><?= h($_POST['profil_jaringan'] ?? '') ?></textarea>
                     </div>
 
                     <div>
-                        <label class="block text-sm font-semibold text-gray-700">Segment Industri Fokus</label>
-                        <input type="text" name="segment_industri" placeholder="Industri yang sering dijangkau"
-                            value="<?= h($_POST['segment_industri'] ?? '') ?>"
+                        <label for="mkt_segment_industri" class="block text-sm font-semibold text-gray-700">Segment Industri Fokus</label>
+                        <input id="mkt_segment_industri" type="text" name="segment_industri_fokus" placeholder="Industri yang sering dijangkau"
+                            value="<?= h($_POST['segment_industri_fokus'] ?? '') ?>"
                             class="mt-1 w-full rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-400 p-3 transition">
                     </div>
                 </div>
@@ -479,6 +516,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </form>
         </div>
     </div>
+
 
     <!-- <script>
         document.getElementById('flagSelect').addEventListener('change', function() {
@@ -554,36 +592,55 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 const flag = flagSelect.value;
                 const partnerType = partnerTypeSelect.value;
 
-                // Reset semua required dulu
-                document.querySelectorAll("#cltForm [required], #mktForm [required]").forEach(el => {
+                // Reset semua required & disable
+                document.querySelectorAll("#cltForm input, #cltForm select, #cltForm textarea").forEach(el => {
                     el.removeAttribute("required");
+                    el.disabled = true;
+                });
+                document.querySelectorAll("#mktForm input, #mktForm select, #mktForm textarea").forEach(el => {
+                    el.removeAttribute("required");
+                    el.disabled = true;
                 });
 
-                // Tampilkan/hidden form
-                document.getElementById("cltForm").classList.toggle("hidden", flag !== "CLT");
-                document.getElementById("mktForm").classList.toggle("hidden", flag !== "MKT");
-
-                document.getElementById("partnerTypeSection").classList.toggle("hidden", flag !== "MKT");
-
-                document.getElementById("mktIndividualForm").classList.toggle("hidden", !(flag === "MKT" && partnerType === "individual"));
-                document.getElementById("mktInstitutionForm").classList.toggle("hidden", !(flag === "MKT" && partnerType === "institution"));
-
-                // Tambahkan kembali required sesuai kondisi
                 if (flag === "CLT") {
-                    document.querySelectorAll("#cltForm [name='email'], #cltForm [name='nama_perusahaan'], #cltForm [name='tipe']").forEach(el => {
-                        el.setAttribute("required", "required");
+                    document.getElementById("cltForm").classList.remove("hidden");
+                    document.querySelectorAll("#cltForm input, #cltForm select, #cltForm textarea").forEach(el => {
+                        el.disabled = false;
+                        if (['email', 'nama_perusahaan', 'tipe'].includes(el.name)) {
+                            el.setAttribute("required", "required");
+                        }
                     });
                 } else if (flag === "MKT") {
-                    document.querySelectorAll("#mktForm [name='email'], #mktForm [name='whatsapp'], #mktForm [name='nama_bank'], #mktForm [name='no_rekening']").forEach(el => {
-                        el.setAttribute("required", "required");
+                    document.getElementById("mktForm").classList.remove("hidden");
+                    document.getElementById("partnerTypeSection").classList.remove("hidden");
+
+                    document.querySelectorAll("#mktForm input, #mktForm select, #mktForm textarea").forEach(el => {
+                        el.disabled = false;
+                    });
+
+                    // Set required untuk MKT
+                    ["email", "whatsapp", "nama_bank", "no_rekening"].forEach(name => {
+                        const el = document.querySelector(`#mktForm [name="${name}"]`);
+                        if (el) el.setAttribute("required", "required");
                     });
 
                     if (partnerType === "individual") {
-                        document.querySelector("#mktIndividualForm [name='nama_lengkap']").setAttribute("required", "required");
+                        document.getElementById("mktIndividualForm").classList.remove("hidden");
+                        const el = document.querySelector('#mktIndividualForm [name="nama_lengkap"]');
+                        if (el) el.setAttribute("required", "required");
                     } else if (partnerType === "institution") {
-                        document.querySelector("#mktInstitutionForm [name='nama_institusi']").setAttribute("required", "required");
+                        document.getElementById("mktInstitutionForm").classList.remove("hidden");
+                        const el = document.querySelector('#mktInstitutionForm [name="nama_institusi"]');
+                        if (el) el.setAttribute("required", "required");
                     }
                 }
+
+                // Sembunyikan yang tidak aktif
+                document.getElementById("cltForm").classList.toggle("hidden", flag !== "CLT");
+                document.getElementById("mktForm").classList.toggle("hidden", flag !== "MKT");
+                document.getElementById("partnerTypeSection").classList.toggle("hidden", flag !== "MKT");
+                document.getElementById("mktIndividualForm").classList.toggle("hidden", !(flag === "MKT" && partnerType === "individual"));
+                document.getElementById("mktInstitutionForm").classList.toggle("hidden", !(flag === "MKT" && partnerType === "institution"));
             }
 
             flagSelect.addEventListener("change", toggleForms);
@@ -646,6 +703,93 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 </script> -->
 
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const flagSelect = document.getElementById("flagSelect");
+            const partnerTypeSelect = document.getElementById("partnerTypeSelect");
+
+            function toggleForms() {
+                // Default values
+                let flag = 'CLT'; // default for partner
+                let partnerType = '';
+
+                if (flagSelect) {
+                    flag = flagSelect.value;
+                }
+                if (partnerTypeSelect) {
+                    partnerType = partnerTypeSelect.value;
+                }
+
+                // Reset semua required & disable
+                document.querySelectorAll("#cltForm input, #cltForm select, #cltForm textarea").forEach(el => {
+                    el.removeAttribute("required");
+                    el.disabled = true;
+                });
+                document.querySelectorAll("#mktForm input, #mktForm select, #mktForm textarea").forEach(el => {
+                    el.removeAttribute("required");
+                    el.disabled = true;
+                });
+
+                // CLT Mode
+                if (flag === "CLT") {
+                    document.getElementById("cltForm").classList.remove("hidden");
+                    document.querySelectorAll("#cltForm input, #cltForm select, #cltForm textarea").forEach(el => {
+                        el.disabled = false;
+                        if (['email', 'nama_perusahaan', 'tipe'].includes(el.name)) {
+                            el.setAttribute("required", "required");
+                        }
+                    });
+                    document.getElementById("mktForm")?.classList.add("hidden");
+                    document.getElementById("partnerTypeSection")?.classList.add("hidden");
+                }
+                // MKT Mode
+                else if (flag === "MKT") {
+                    document.getElementById("mktForm").classList.remove("hidden");
+                    document.getElementById("partnerTypeSection")?.classList.remove("hidden");
+
+                    document.querySelectorAll("#mktForm input, #mktForm select, #mktForm textarea").forEach(el => {
+                        el.disabled = false;
+                    });
+
+                    ["email", "whatsapp", "nama_bank", "no_rekening"].forEach(name => {
+                        const el = document.querySelector(`#mktForm [name="${name}"]`);
+                        if (el) el.setAttribute("required", "required");
+                    });
+
+                    if (partnerType === "individual") {
+                        document.getElementById("mktIndividualForm").classList.remove("hidden");
+                        const el = document.querySelector('#mktIndividualForm [name="nama_lengkap"]');
+                        if (el) el.setAttribute("required", "required");
+                    } else if (partnerType === "institution") {
+                        document.getElementById("mktInstitutionForm").classList.remove("hidden");
+                        const el = document.querySelector('#mktInstitutionForm [name="nama_institusi"]');
+                        if (el) el.setAttribute("required", "required");
+                    } else {
+                        document.getElementById("mktIndividualForm").classList.add("hidden");
+                        document.getElementById("mktInstitutionForm").classList.add("hidden");
+                    }
+                }
+
+                // Final visibility toggle
+                document.getElementById("cltForm").classList.toggle("hidden", flag !== "CLT");
+                document.getElementById("mktForm")?.classList.toggle("hidden", flag !== "MKT");
+                document.getElementById("partnerTypeSection")?.classList.toggle("hidden", flag !== "MKT");
+                document.getElementById("mktIndividualForm")?.classList.toggle("hidden", !(flag === "MKT" && partnerType === "individual"));
+                document.getElementById("mktInstitutionForm")?.classList.toggle("hidden", !(flag === "MKT" && partnerType === "institution"));
+            }
+
+            if (flagSelect) {
+                flagSelect.addEventListener("change", toggleForms);
+            }
+            if (partnerTypeSelect) {
+                partnerTypeSelect.addEventListener("change", toggleForms);
+            }
+
+            // Run once on load
+            toggleForms();
+        });
+    </script>
+    
 </body>
 
 </html>

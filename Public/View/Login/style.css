@@ -477,6 +477,10 @@ textarea:focus {
     font-size: 14px;
 }
 
+.welcome-text p b {
+    font-weight: 600;
+}
+
 .modal {
   display: none;
   position: fixed;

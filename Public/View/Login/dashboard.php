@@ -6,6 +6,11 @@ if (!empty($_SESSION['bulk_msg'])): ?>
     </div>
     <?php unset($_SESSION['bulk_msg']); ?>
 <?php endif;
+if ($isPartner && $isPending): ?>
+    <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6">
+        <strong>Perhatian:</strong> Akun Anda sedang dalam proses verifikasi. Fitur "Send Email" akan aktif setelah disetujui oleh admin.
+    </div>
+<?php endif;
 // require '../../backend_secure/crm/db.php';
 require '../../Model/db.php';
 require_once __DIR__ . '/../../Controller/functions.php';
@@ -26,6 +31,53 @@ if (($_SESSION['user']['role'] ?? '') === 'admin') {
 $partner = $_SESSION['user'];
 $marketing_id = $partner['marketing_id']; // contoh: PTR
 $isPartner = ($partner['role'] === 'partner');
+
+$user = $_SESSION['user'];
+$marketing_id = $user['marketing_id'] ?? null;
+$role = $user['role'] ?? '';
+
+if (!$marketing_id) {
+    $_SESSION['error_msg'] = "Marketing ID tidak ditemukan.";
+    header("Location: login.php");
+    exit;
+}
+
+$isPartner = ($role === 'partner');
+$isPending = false;
+
+if ($isPartner) {
+    $active_status = null;
+    // Cek di partner_individual berdasarkan promo_code
+    $stmt = $pdo->prepare("SELECT active_status FROM partner_individual WHERE promo_code = ?");
+    $stmt->execute([$marketing_id]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$row) {
+        // Cek di partner_institution berdasarkan kode_institusi
+        $stmt = $pdo->prepare("SELECT active_status FROM partner_institution WHERE kode_institusi = ?");
+        $stmt->execute([$marketing_id]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    if ($row) {
+        $active_status = $row['active_status'];
+    }
+
+    if ($active_status === null) {
+        $_SESSION['error_msg'] = "Akun partner tidak ditemukan.";
+        header("Location: login.php");
+        exit;
+    }
+
+    if ($active_status === 'REJECTED') {
+        $_SESSION['error_msg'] = "Akun Anda telah ditolak. Silakan hubungi admin.";
+        header("Location: login.php");
+        exit;
+    }
+
+    $isPending = ($active_status === 'PENDING');
+}
+// Jika bukan partner → $isPending = false → full akses
 
 // Cek jumlah data CRM untuk marketing ini
 $stmtCount = $pdo->prepare("SELECT COUNT(*) FROM crm_contacts_staging WHERE ditemukan_oleh = ?");
@@ -618,6 +670,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <span><?= htmlspecialchars($partner['name'] ?? 'Partner') ?></span>!
                 </h2>
                 <p>Your Marketing ID: <b><?= htmlspecialchars($partner['marketing_id']) ?></b></p>
+                <?php if ($isPartner && isset($active_status)): ?>
+                    <p>Status Akun:
+                        <b style="color: 
+                <?= match ($active_status) {
+                        'ACTIVE' => '#16a34a',      // hijau
+                        'PENDING' => '#f59e0b',     // kuning
+                        'REJECTED' => '#dc2626',    // merah
+                        default => '#6b7280'        // abu-abu
+                    };
+                ?>">
+                            <?= htmlspecialchars($active_status === 'ACTIVE' ? 'Aktif' : ($active_status === 'PENDING' ? 'Menunggu Verifikasi' : ($active_status === 'REJECTED' ? 'Ditolak' : $active_status))) ?>
+                        </b>
+                    </p>
+                <?php endif; ?>
             </div>
         </div>
 
@@ -733,7 +799,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <td><?= htmlspecialchars($c['status'] ?? '-') ?></td>
                                 <!-- Di bagian render actions di DataTables -->
                                 <td class="table-actions">
-                                    <?php if (($c['status'] ?? '') === 'input' && $emailClean && empty($isPartner)): ?>
+                                    <?php if (($c['status'] ?? '') === 'input' && $emailClean && !$isPending): ?>
                                         <button type="button" class="btn email" onclick="previewEmail('<?= $emailClean ?>')">Send Email</button>
                                     <?php else: ?>
                                         <button class="btn email" style="opacity:0.5; cursor:not-allowed;" disabled>Send Email</button>
